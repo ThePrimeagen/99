@@ -8,7 +8,7 @@ function fizz_buzz(count)
     return result
 end
 
---- @param numbers number[]
+--- @param numbers nuber[]
 function sort(numbers)
     table.sort(numbers)
     return numbers
