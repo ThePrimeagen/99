@@ -1,6 +1,6 @@
 ## The AI Agent That Neovim Deserves
 This is an example repo where i want to test what i think the ideal AI workflow
-is for people who dont have "skill issues."  This is meant to streamline the requests to AI and limit them it restricted areas.  For more general requests, please just use opencode.  Dont use neovim.
+is for people who dont have "skill issues."  This is meant to streamline the requests to AI and limit them to restricted areas.  For more general requests, please just use opencode.  Dont use neovim.
 
 ## Warning
 1. Prompts are temporary right now. they could be massively improved
