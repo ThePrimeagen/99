@@ -1,6 +1,7 @@
 local Logger = require("99.logger.logger")
 local utils = require("99.utils")
 local random_file = utils.random_file
+local editor = require("99.editor")
 
 --- @class _99.RequestContext
 --- @field md_file_names string[]
@@ -89,18 +90,87 @@ end
 --- @return self
 function RequestContext:finalize()
     self:_read_md_files()
+
+    -- Add imports context to help LLM understand dependencies
+    local imports_context = self:get_imports_context()
+    if imports_context ~= "" then
+        table.insert(self.ai_context, imports_context)
+    end
+
     if self.range then
         table.insert(self.ai_context, self._99.prompts.get_file_location(self))
         table.insert(
             self.ai_context,
             self._99.prompts.get_range_text(self.range)
         )
+        -- Gather LSP type context if available
+        self:_gather_lsp_context()
     end
     table.insert(
         self.ai_context,
         self._99.prompts.tmp_file_location(self.tmp_file)
     )
     return self
+end
+
+--- Gathers type information from LSP for the current range.
+--- Adds type context to ai_context to help LLM make better decisions.
+function RequestContext:_gather_lsp_context()
+    if not self.range then
+        return
+    end
+
+    local lsp = editor.lsp
+    if not lsp then
+        return
+    end
+
+    local logger = self.logger:set_area("RequestContext._gather_lsp_context")
+
+    if not lsp.has_lsp(self.buffer) then
+        logger:debug("No LSP available, skipping type context")
+        return
+    end
+
+    logger:debug("Gathering LSP context for range")
+    local type_context = lsp.gather_context_sync(self, 1000)
+
+    if type_context and type_context ~= "" then
+        logger:info("Adding LSP type context", "length", #type_context)
+        table.insert(self.ai_context, type_context)
+    else
+        logger:debug("No type context gathered")
+    end
+end
+
+--- Gathers import information from the current file.
+--- Adds import context to ai_context to help LLM understand dependencies.
+--- @return string Formatted imports context
+function RequestContext:get_imports_context()
+    local ts = editor.treesitter
+    if not ts then
+        return ""
+    end
+
+    local imports = ts.imports(self.buffer)
+    if #imports == 0 then
+        return ""
+    end
+
+    local lines = { "<Imports>" }
+    for _, imp in ipairs(imports) do
+        if imp.alias then
+            table.insert(
+                lines,
+                string.format('  %s = require("%s")', imp.alias, imp.path)
+            )
+        else
+            table.insert(lines, string.format('  require("%s")', imp.path))
+        end
+    end
+    table.insert(lines, "</Imports>")
+
+    return table.concat(lines, "\n")
 end
 
 function RequestContext:clear_marks()

@@ -210,10 +210,16 @@ function M.containing_function(context, cursor)
     return Function.from_ts_node(found_node, cursor, context)
 end
 
---- @param buffer number
---- @return _99.treesitter.Node[]
+--- @class _99.treesitter.Import
+--- @field alias string? Local name for the import (e.g., "geo" in "local geo = require('99.geo')")
+--- @field path string The require path (e.g., "99.geo")
+--- @field node _99.treesitter.Node The treesitter node for the import declaration
+
+--- Extracts all imports from a buffer using treesitter.
+---
+--- @param buffer number The buffer to extract imports from
+--- @return _99.treesitter.Import[] List of import information
 function M.imports(buffer)
-    Logger:assert(false, "not implemented yet", "id", 69420)
     local lang = vim.bo[buffer].ft
     local root = tree_root(buffer, lang)
     if not root then
@@ -238,13 +244,21 @@ function M.imports(buffer)
 
     local imports = {}
     for _, match, _ in query:iter_matches(root, buffer, 0, -1, { all = true }) do
+        local import = {}
         for id, nodes in pairs(match) do
             local name = query.captures[id]
-            if name == "import.name" then
-                for _, node in ipairs(nodes) do
-                    table.insert(imports, node)
+            for _, node in ipairs(nodes) do
+                if name == "import.alias" then
+                    import.alias = vim.treesitter.get_node_text(node, buffer)
+                elseif name == "import.path" then
+                    import.path = vim.treesitter.get_node_text(node, buffer)
+                elseif name == "import.decl" or name == "import.call" then
+                    import.node = node
                 end
             end
+        end
+        if import.path then
+            table.insert(imports, import)
         end
     end
 
