@@ -240,6 +240,35 @@ function _99.stop_all_requests()
     _99_state.__active_requests = {}
 end
 
+--- Semantic search: prompts for a search query and populates quickfix list
+--- with relevant file locations from the codebase.
+function _99.semantic_search()
+    local context = get_context("semantic_search")
+    context.logger:debug("start")
+    Window.capture_input(function(success, response)
+        context.logger:debug(
+            "capture_prompt",
+            "success",
+            success,
+            "response",
+            response
+        )
+        if success and response ~= "" then
+            ops.semantic_search(context, response)
+        end
+    end, {})
+end
+
+--- Semantic search with a pre-defined prompt (for direct API usage or keymaps)
+--- @param prompt string
+function _99.semantic_search_prompt(prompt)
+    local context = get_context("semantic_search_prompt")
+    context.logger:debug("start", "prompt", prompt)
+    if prompt and prompt ~= "" then
+        ops.semantic_search(context, prompt)
+    end
+end
+
 --- if you touch this function you will be fired
 --- @return _99.State
 function _99.__get_state()
