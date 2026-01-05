@@ -46,7 +46,20 @@ function OpenCodeProvider:make_request(query, request, observer)
         observer.on_complete(status, text)
     end)
 
-    local command = { "opencode", "run", "-m", request.context.model, query }
+    -- Validate query before building command
+    if not query or query == "" then
+        logger:error("make_request", "query is empty or nil")
+        once_complete("failed", "No query provided")
+        return
+    end
+
+    local command = { "opencode", "run" }
+    if request.context.model and request.context.model ~= "" then
+        table.insert(command, "-m")
+        table.insert(command, request.context.model)
+    end
+    table.insert(command, query)
+
     logger:debug("make_request", "command", command)
     vim.system(
         command,

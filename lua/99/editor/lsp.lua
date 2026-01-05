@@ -1117,9 +1117,16 @@ end
 -- The SymbolKind enum is also exported for filtering operations.
 --------------------------------------------------------------------------------
 
-Lsp.get_module_exports(0, "99.editor.lsp", function(exports)
-    Lsp.print_module_exports(exports)
-end)
+-- Only run debug export if LSP is actually attached
+vim.defer_fn(function()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local clients = vim.lsp.get_clients({ bufnr = bufnr })
+    if #clients > 0 then
+        Lsp.get_module_exports(bufnr, "99.editor.lsp", function(exports)
+            Lsp.print_module_exports(exports)
+        end)
+    end
+end, 200)
 
 return {
     Lsp = Lsp,

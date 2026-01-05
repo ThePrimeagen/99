@@ -23,7 +23,7 @@ local Range = require("99.geo").Range
 --- @return _99.StateProps
 local function create_99_state()
     return {
-        model = "opencode/claude-opus-4-5",
+        model = "",  -- Empty string uses opencode's default model configuration
         md_files = {},
         prompts = require("99.prompt-settings"),
         ai_stdout_rows = 3,

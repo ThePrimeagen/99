@@ -8,7 +8,24 @@ is for people who dont have "skill issues."  This is meant to streamline the req
 3. Still very alpha, could have severe problems
 
 ## How to use
-**you must have opencode installed and setup**
+
+### Prerequisites
+**You must have opencode installed and authenticated**
+
+1. Install opencode:
+   ```bash
+   curl -fsSL https://opencode.ai/install | bash
+   ```
+
+2. Authenticate with your preferred provider:
+   ```bash
+   opencode auth login
+   ```
+   Select your provider (Anthropic, GitHub Copilot, OpenAI, etc.) and follow the prompts.
+
+By default, 99 uses whatever model you configured in opencode. To use a specific model, add the `model` option to your setup (see configuration below).
+
+### Configuration
 
 Add the following configuration to your neovim config
 
@@ -30,6 +47,10 @@ I make the assumption you are using Lazy
 					path = "/tmp/" .. basename .. ".99.debug",
 					print_on_error = true,
 				},
+
+                --- Optional: override the model (defaults to opencode's configured model)
+                --- Examples: "github-copilot/gpt-4o", "anthropic/claude-sonnet-4-5", "opencode/gpt-5-nano"
+                --- model = "github-copilot/gpt-4o",
 
                 --- WARNING: if you change cwd then this is likely broken
                 --- ill likely fix this in a later change
