@@ -8,21 +8,44 @@ end
 --- @class _99.Prompts.SpecificOperations
 --- @field visual_selection fun(range: _99.Range): string
 --- @field fill_in_function fun(): string
+--- @field implement_function string
 local prompts = {
     fill_in_function = function()
         return [[
-fill in the function.  dont change the function signature.
-do not edit anything outside of this function.
-prioritize using internal functions for work that has already been done.
-any NOTE's left in the function should be removed but instructions followed.
-Your response should be the full function, including function declaration, do not provide the body only
-    ]]
+<Task>Fill in the function body</Task>
+
+<Rules>
+1. Preserve the EXACT function signature - do not modify function name, parameters, or return type
+2. Only write code INSIDE the function body - never modify anything outside
+3. Reuse existing helper functions and utilities from the codebase when applicable
+4. Follow any NOTE comments as instructions, then remove them from the final output
+5. Follow any TODO comments as instructions, then remove them from the final output
+6. Match the code style and conventions used in the surrounding file
+</Rules>
+
+<OutputFormat>
+Return the COMPLETE function including:
+- The full function declaration/signature (unchanged)
+- The implemented function body
+- The closing of the function
+
+Do NOT return:
+- Only the body without the declaration
+- Partial implementations
+- Explanations or markdown formatting
+- Code outside of the function
+</OutputFormat>
+]]
     end,
     output_file = function()
         return [[
-NEVER alter any file other than TEMP_FILE.
-never provide the requested changes as conversational output.
-ONLY provide requested changes by writing the change to TEMP_FILE
+<OutputRules>
+1. Write ALL output to TEMP_FILE only
+2. Do NOT modify any other files
+3. Do NOT include explanations, comments about your changes, or conversational text
+4. Write ONLY the requested code/content directly to TEMP_FILE
+5. The output must be ready to use as-is without any post-processing
+</OutputRules>
 ]]
     end,
     --- @param prompt string
@@ -43,18 +66,36 @@ ONLY provide requested changes by writing the change to TEMP_FILE
     visual_selection = function(range)
         return string.format(
             [[
-You receive a selection in neovim that you need to replace with new code.
-The selection's contents may contain notes, incorporate the notes every time if there are some.
-consider the context of the selection and what you are suppose to be implementing
-<SELECTION_LOCATION>
+<Task>Replace the selected code with an improved implementation</Task>
+
+<Rules>
+1. The selection will be REPLACED with your output - write only the replacement code
+2. Follow any NOTE or TODO comments as instructions, then remove them from output
+3. Maintain consistency with the surrounding code style and conventions
+4. Consider the context of where this code appears in the file
+5. Ensure the replacement integrates correctly with the rest of the file
+6. Preserve necessary imports, type annotations, and documentation if present
+</Rules>
+
+<SelectionInfo>
+<Location>%s</Location>
+<SelectedCode>
 %s
-</SELECTION_LOCATION>
-<SELECTION_CONTENT>
+</SelectedCode>
+</SelectionInfo>
+
+<FileContext>
 %s
-</SELECTION_CONTENT>
-<FILE_CONTAINING_SELECTION>
-%s
-</FILE_CONTAINING_SELECTION>
+</FileContext>
+
+<OutputFormat>
+Return ONLY the replacement code that will directly substitute the selection.
+Do NOT include:
+- Markdown code fences or formatting
+- Explanations or comments about changes
+- The surrounding unchanged code
+- Line numbers
+</OutputFormat>
 ]],
             range:to_string(),
             range:to_text(),
@@ -62,7 +103,33 @@ consider the context of the selection and what you are suppose to be implementin
         )
     end,
     -- luacheck: ignore 631
-    read_tmp = "never attempt to read TEMP_FILE.  It is purely for output.  Previous contents, which may not exist, can be written over without worry",
+    implement_function = [[
+<Task>Implement a new function based on its usage at the cursor location</Task>
+
+<Rules>
+1. Analyze the function call to infer the expected signature and behavior
+2. Write a complete, working implementation that matches the call site usage
+3. Use appropriate parameter names based on the arguments being passed
+4. Infer the return type from how the result is used
+5. Follow the code style and conventions of the surrounding file
+6. Add minimal documentation only if the function's purpose is not obvious
+</Rules>
+
+<OutputFormat>
+Return ONLY the complete function definition including:
+- Function signature with appropriate parameters and types
+- The full implementation body
+- Proper closing of the function
+
+Do NOT include:
+- Markdown code fences or formatting
+- Explanations about the implementation
+- Multiple alternative implementations
+- Import statements (unless absolutely necessary)
+</OutputFormat>
+]],
+    -- luacheck: ignore 631
+    read_tmp = "TEMP_FILE is write-only. Never read from it. You may overwrite any existing contents.",
 }
 
 --- @class _99.Prompts
