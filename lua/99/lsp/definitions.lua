@@ -47,13 +47,11 @@ function M.parse_definition_response(result)
 
     local definitions = {}
 
-    -- Single Location
     if result.uri then
         table.insert(definitions, parse_location(result))
         return definitions
     end
 
-    -- Array of Location or LocationLink
     if type(result) == "table" and #result > 0 then
         for _, item in ipairs(result) do
             if is_location_link(item) then
@@ -80,7 +78,6 @@ function M.get_definition(bufnr, position, callback)
         return
     end
 
-    -- Check if definition is supported
     if not client.server_capabilities.definitionProvider then
         callback(nil, "definition_not_supported")
         return
@@ -106,7 +103,6 @@ end
 --- @param file_path string File path to load
 --- @param callback fun(bufnr: number?, err: string?) Callback with buffer number
 function M.ensure_buffer_loaded(file_path, callback)
-    -- Check if file exists
     if vim.fn.filereadable(file_path) ~= 1 then
         callback(nil, "file_not_readable: " .. file_path)
         return
@@ -121,7 +117,6 @@ function M.ensure_buffer_loaded(file_path, callback)
         vim.fn.bufload(bufnr)
     end
 
-    -- Wait for LSP to potentially attach
     vim.schedule(function()
         callback(bufnr, nil)
     end)
@@ -139,14 +134,11 @@ function M.get_definition_with_buffer(bufnr, position, callback)
         end
 
         if not definitions or #definitions == 0 then
-            callback(nil, nil, nil) -- No definition found (not an error)
+            callback(nil, nil, nil)
             return
         end
 
-        -- Use the first definition
         local def = definitions[1]
-
-        -- Load the target buffer
         M.ensure_buffer_loaded(def.file_path, function(target_bufnr, load_err)
             if load_err then
                 callback(def, nil, load_err)
@@ -165,12 +157,10 @@ function M.is_external_definition(definition)
     local cwd = vim.fn.getcwd()
     local file_path = definition.file_path
 
-    -- Check if the file is under the current working directory
     if file_path:sub(1, #cwd) == cwd then
         return false
     end
 
-    -- Check common external package paths
     local external_patterns = {
         "/node_modules/",
         "/.npm/",

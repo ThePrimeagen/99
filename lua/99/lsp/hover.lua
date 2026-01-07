@@ -13,17 +13,14 @@ local function extract_hover_contents(contents)
         return ""
     end
 
-    -- Simple string
     if type(contents) == "string" then
         return contents
     end
 
-    -- MarkupContent: { kind: "markdown"|"plaintext", value: string }
     if type(contents) == "table" and contents.value then
         return contents.value
     end
 
-    -- MarkedString[] or MarkupContent[]
     if type(contents) == "table" and #contents > 0 then
         local parts = {}
         for _, part in ipairs(contents) do
@@ -32,7 +29,6 @@ local function extract_hover_contents(contents)
             elseif type(part) == "table" and part.value then
                 table.insert(parts, part.value)
             elseif type(part) == "table" and part.language then
-                -- MarkedString: { language: string, value: string }
                 table.insert(parts, part.value or "")
             end
         end
@@ -46,11 +42,8 @@ end
 --- @param text string Text with potential markdown fences
 --- @return string Clean text
 local function strip_markdown_fences(text)
-    -- Remove opening fences like ```lua, ```typescript, etc.
     local result = text:gsub("```%w*\n?", "")
-    -- Remove closing fences
     result = result:gsub("```", "")
-    -- Trim whitespace
     result = result:gsub("^%s+", ""):gsub("%s+$", "")
     return result
 end
@@ -66,43 +59,36 @@ function M.extract_type_signature(hover_text)
 
     local clean = strip_markdown_fences(hover_text)
 
-    -- Handle Lua-style: "function foo(a: number, b: string): boolean"
     local lua_params, lua_ret = clean:match("function%s*[%w_%.%:]*%((.-)%)%s*:%s*([^\n]+)")
     if lua_params then
         return string.format("(%s): %s", lua_params, lua_ret)
     end
 
-    -- Handle Lua function without return type
     local lua_params_only = clean:match("function%s*[%w_%.%:]*%((.-)%)")
     if lua_params_only then
         return string.format("(%s)", lua_params_only)
     end
 
-    -- Handle TypeScript/JavaScript: "const foo: (a: number) => string"
     local ts_arrow = clean:match(":%s*(%(.-%)%s*=>%s*[^\n]+)")
     if ts_arrow then
         return ts_arrow
     end
 
-    -- Handle TypeScript method: "method(a: number): string"
     local ts_method = clean:match("[%w_]+%(.-%)%s*:%s*[^\n]+")
     if ts_method then
         return ts_method
     end
 
-    -- Handle simple type annotation: "foo: string"
     local simple_type = clean:match("^[%w_]+:%s*([^\n]+)")
     if simple_type then
         return simple_type
     end
 
-    -- Handle "local foo: Type" style
     local local_type = clean:match("local%s+[%w_]+:%s*([^\n]+)")
     if local_type then
         return local_type
     end
 
-    -- Return first line as fallback
     local first_line = clean:match("^([^\n]+)")
     return first_line or clean
 end
@@ -120,7 +106,6 @@ function M.get_hover(bufnr, position, callback)
         return
     end
 
-    -- Check if hover is supported
     if not client.server_capabilities.hoverProvider then
         callback(nil, "hover_not_supported")
         return
@@ -138,7 +123,7 @@ function M.get_hover(bufnr, position, callback)
         end
 
         if not result or not result.contents then
-            callback(nil, nil) -- No hover info available (not an error)
+            callback(nil, nil)
             return
         end
 
@@ -165,7 +150,6 @@ function M.batch_hover(bufnr, positions, callback)
     local pending = #positions
     local completed = false
 
-    -- Handle completion
     local function check_done()
         if completed then
             return
@@ -177,7 +161,6 @@ function M.batch_hover(bufnr, positions, callback)
         end
     end
 
-    -- Request hover for each position
     for i, position in ipairs(positions) do
         M.get_hover(bufnr, position, function(result, _)
             results[i] = result
@@ -217,9 +200,8 @@ function M.enrich_symbols(bufnr, symbols, callback)
 
     local symbols_mod = require("99.lsp.symbols")
 
-    -- Collect all positions (including children)
     local positions = {}
-    local symbol_refs = {} -- Track which symbol each position belongs to
+    local symbol_refs = {}
 
     local function collect_positions(syms, parent_path)
         for i, sym in ipairs(syms) do
@@ -228,7 +210,6 @@ function M.enrich_symbols(bufnr, symbols, callback)
             table.insert(positions, pos)
             table.insert(symbol_refs, { symbol = sym, path = path })
 
-            -- Recursively collect children
             if sym.children and #sym.children > 0 then
                 collect_positions(sym.children, path)
             end
@@ -237,9 +218,7 @@ function M.enrich_symbols(bufnr, symbols, callback)
 
     collect_positions(symbols, "root")
 
-    -- Batch hover all positions
     M.batch_hover(bufnr, positions, function(results)
-        -- Apply hover results to symbols
         for i, result in pairs(results) do
             if result and result.contents then
                 local ref = symbol_refs[i]

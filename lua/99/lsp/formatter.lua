@@ -141,7 +141,6 @@ function M.format_symbol_with_children(symbol, indent_level)
     local prefix = indent(indent_level)
     local keyword = M.kind_to_keyword(symbol.kind)
 
-    -- Opening line
     local opening = prefix
     if keyword ~= "" then
         opening = opening .. keyword .. " "
@@ -149,24 +148,20 @@ function M.format_symbol_with_children(symbol, indent_level)
     opening = opening .. symbol.name .. " {"
     table.insert(lines, opening)
 
-    -- Children
     if symbol.children and #symbol.children > 0 then
         for _, child in ipairs(symbol.children) do
             if M.is_block_kind(child.kind) then
-                -- Recursively format nested blocks
                 local child_lines = M.format_symbol_with_children(child, indent_level + 1)
                 for _, line in ipairs(child_lines) do
                     table.insert(lines, line)
                 end
             else
-                -- Simple child symbol
                 local child_line = M.format_symbol(child, indent_level + 1)
                 table.insert(lines, child_line)
             end
         end
     end
 
-    -- Closing brace
     table.insert(lines, prefix .. "}")
 
     return lines
@@ -179,21 +174,17 @@ end
 function M.format_file_context(file_path, symbols)
     local lines = {}
 
-    -- Header
     table.insert(lines, string.format("=== File: %s ===", file_path))
     table.insert(lines, "Symbols:")
 
-    -- Format each top-level symbol
     for _, symbol in ipairs(symbols) do
         if M.is_block_kind(symbol.kind) then
-            -- Block symbol with potential children
             local symbol_lines = M.format_symbol_with_children(symbol, 1)
             for _, line in ipairs(symbol_lines) do
                 table.insert(lines, line)
             end
             table.insert(lines, "")
         else
-            -- Simple symbol
             local line = M.format_symbol(symbol, 1)
             table.insert(lines, line)
         end
@@ -216,14 +207,12 @@ function M.format_imports(imports)
         local line = "  from " .. import.module_path .. ": "
 
         if import.resolved_symbols and #import.resolved_symbols > 0 then
-            -- Format resolved symbols
             local symbol_strs = {}
             for _, sym in ipairs(import.resolved_symbols) do
                 table.insert(symbol_strs, sym.signature or sym.name)
             end
             line = line .. table.concat(symbol_strs, ", ")
         elseif import.symbols and #import.symbols > 0 then
-            -- Just list unresolved symbol names
             line = line .. table.concat(import.symbols, ", ")
         end
 

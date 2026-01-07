@@ -190,16 +190,23 @@ end
 
 --- @param observer _99.ProviderObserver?
 function Request:start(observer)
-    self.context:finalize()
-    for _, content in ipairs(self.context.ai_context) do
-        self:add_prompt_content(content)
-    end
-
-    local query = table.concat(self._content, "\n")
     observer = observer or DevNullObserver
 
-    self.logger:debug("start", "query", query)
-    self.provider:make_request(query, self, observer)
+    self.context:gather_lsp_context(function()
+        if self:is_cancelled() then
+            observer.on_complete("cancelled", "")
+            return
+        end
+
+        self.context:finalize()
+        for _, content in ipairs(self.context.ai_context) do
+            self:add_prompt_content(content)
+        end
+
+        local query = table.concat(self._content, "\n")
+        self.logger:debug("start", "query", query)
+        self.provider:make_request(query, self, observer)
+    end)
 end
 
 return Request

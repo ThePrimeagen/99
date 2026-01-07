@@ -17,7 +17,6 @@ function M.extract_imports_from_symbols(symbols)
     local imports = {}
 
     for _, symbol in ipairs(symbols) do
-        -- Module symbols often represent imports
         if symbol.kind == formatter.SymbolKind.Module then
             table.insert(imports, {
                 module_path = symbol.name,
@@ -45,7 +44,6 @@ function M.extract_imports_from_buffer(bufnr)
         local import = nil
 
         if filetype == "lua" then
-            -- Lua: local foo = require("module")
             local module = line:match('require%s*%(?%s*["\']([^"\']+)["\']')
             if module then
                 local var_name = line:match("^%s*local%s+([%w_]+)%s*=") or module:match("([^%.]+)$")
@@ -56,7 +54,6 @@ function M.extract_imports_from_buffer(bufnr)
                 }
             end
         elseif filetype == "typescript" or filetype == "typescriptreact" or filetype == "javascript" or filetype == "javascriptreact" then
-            -- ES6: import { foo, bar } from "module"
             local named, module = line:match('import%s*{([^}]+)}%s*from%s*["\']([^"\']+)["\']')
             if named and module then
                 local symbol_names = {}
@@ -69,7 +66,6 @@ function M.extract_imports_from_buffer(bufnr)
                     position = { line = line_num - 1, character = 0 },
                 }
             else
-                -- ES6: import foo from "module"
                 local default_import, mod = line:match('import%s+([%w_]+)%s+from%s*["\']([^"\']+)["\']')
                 if default_import and mod then
                     import = {
@@ -78,7 +74,6 @@ function M.extract_imports_from_buffer(bufnr)
                         position = { line = line_num - 1, character = 0 },
                     }
                 else
-                    -- ES6: import * as foo from "module"
                     local namespace, mod2 = line:match('import%s*%*%s*as%s+([%w_]+)%s+from%s*["\']([^"\']+)["\']')
                     if namespace and mod2 then
                         import = {
@@ -90,7 +85,6 @@ function M.extract_imports_from_buffer(bufnr)
                 end
             end
         elseif filetype == "python" then
-            -- Python: from module import foo, bar
             local module, named = line:match("^%s*from%s+([%w_.]+)%s+import%s+(.+)$")
             if module and named then
                 local symbol_names = {}
@@ -105,7 +99,6 @@ function M.extract_imports_from_buffer(bufnr)
                     position = { line = line_num - 1, character = 0 },
                 }
             else
-                -- Python: import module
                 local mod = line:match("^%s*import%s+([%w_.]+)")
                 if mod then
                     import = {
@@ -116,7 +109,6 @@ function M.extract_imports_from_buffer(bufnr)
                 end
             end
         elseif filetype == "go" then
-            -- Go: import "package" or import ( "package" )
             local pkg = line:match('import%s*["\']([^"\']+)["\']')
                 or line:match('^%s*["\']([^"\']+)["\']')
             if pkg then
@@ -147,13 +139,11 @@ function M.resolve_import(bufnr, import, callback)
     local definitions = require("99.lsp.definitions")
     local symbols = require("99.lsp.symbols")
 
-    -- If no position to look up, return as-is
     if not import.position then
         callback(import)
         return
     end
 
-    -- Get definition of the import
     definitions.get_definition_with_buffer(bufnr, import.position, function(def, target_bufnr, err)
         if err or not def or not target_bufnr then
             callback(import)
@@ -163,20 +153,17 @@ function M.resolve_import(bufnr, import, callback)
         import.resolved_uri = def.uri
         import.is_external = definitions.is_external_definition(def)
 
-        -- Don't traverse into external packages
         if import.is_external then
             callback(import)
             return
         end
 
-        -- Get symbols from the target file
         symbols.get_document_symbols(target_bufnr, function(target_symbols, sym_err)
             if sym_err or not target_symbols then
                 callback(import)
                 return
             end
 
-            -- Filter to only the imported symbols if we know their names
             if import.symbols and #import.symbols > 0 then
                 local imported_names = {}
                 for _, name in ipairs(import.symbols) do
@@ -191,7 +178,6 @@ function M.resolve_import(bufnr, import, callback)
                 end
                 import.resolved_symbols = filtered
             else
-                -- Include all exported symbols (top-level)
                 import.resolved_symbols = target_symbols
             end
 
@@ -237,7 +223,6 @@ function M.get_imports(bufnr, resolve, callback)
         return
     end
 
-    -- Resolve imports if requested
     M.resolve_imports(bufnr, imports, callback)
 end
 

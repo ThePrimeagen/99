@@ -66,8 +66,6 @@ end
 --- @param uri string File URI
 function Cache:invalidate(uri)
     self.entries[uri] = nil
-
-    -- Cancel any pending debounce timer
     local timer = self.debounce_timers[uri]
     if timer then
         if type(timer.stop) == "function" then
@@ -80,8 +78,6 @@ end
 --- Clear all cache entries
 function Cache:clear()
     self.entries = {}
-
-    -- Cancel all debounce timers
     for uri, timer in pairs(self.debounce_timers) do
         if type(timer.stop) == "function" then
             timer:stop()
@@ -127,7 +123,6 @@ end
 --- Schedule debounced invalidation for a URI
 --- @param uri string File URI
 function Cache:schedule_invalidation(uri)
-    -- Cancel existing timer if any
     local existing = self.debounce_timers[uri]
     if existing then
         if type(existing.stop) == "function" then
@@ -135,7 +130,6 @@ function Cache:schedule_invalidation(uri)
         end
     end
 
-    -- Schedule new invalidation
     local timer = vim.defer_fn(function()
         self:invalidate(uri)
         self.debounce_timers[uri] = nil
@@ -147,14 +141,12 @@ end
 --- Set up autocmds for cache invalidation
 --- Call this once after creating the cache
 function Cache:setup_invalidation()
-    -- Clean up existing augroup if any
     if self.augroup then
         vim.api.nvim_del_augroup_by_id(self.augroup)
     end
 
     self.augroup = vim.api.nvim_create_augroup("99LspCache", { clear = true })
 
-    -- Immediate invalidation on file save
     vim.api.nvim_create_autocmd("BufWritePost", {
         group = self.augroup,
         callback = function(args)
@@ -163,7 +155,6 @@ function Cache:setup_invalidation()
         end,
     })
 
-    -- Debounced invalidation on text change
     vim.api.nvim_create_autocmd("TextChanged", {
         group = self.augroup,
         callback = function(args)
@@ -172,7 +163,6 @@ function Cache:setup_invalidation()
         end,
     })
 
-    -- Also handle insert mode text changes
     vim.api.nvim_create_autocmd("TextChangedI", {
         group = self.augroup,
         callback = function(args)
@@ -181,7 +171,6 @@ function Cache:setup_invalidation()
         end,
     })
 
-    -- Clean up when buffer is deleted
     vim.api.nvim_create_autocmd("BufDelete", {
         group = self.augroup,
         callback = function(args)
@@ -219,11 +208,9 @@ function Cache:get_symbols(bufnr, callback)
         return
     end
 
-    -- Fetch fresh symbols
     local symbols_mod = require("99.lsp.symbols")
     symbols_mod.get_document_symbols(bufnr, function(symbols, err)
         if not err and symbols then
-            -- Update or create cache entry
             if entry then
                 entry.symbols = symbols
                 entry.timestamp = vim.uv.now()
@@ -248,11 +235,9 @@ function Cache:get_imports(bufnr, resolve, callback)
         return
     end
 
-    -- Fetch fresh imports
     local imports_mod = require("99.lsp.imports")
     imports_mod.get_imports(bufnr, resolve, function(imports)
         if imports then
-            -- Update or create cache entry
             if entry then
                 entry.imports = imports
                 entry.timestamp = vim.uv.now()

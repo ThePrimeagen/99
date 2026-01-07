@@ -17,6 +17,7 @@ local Range = require("99.geo").Range
 --- @field languages string[]
 --- @field display_errors boolean
 --- @field provider_override _99.Provider?
+--- @field lsp_config _99.Lsp.Config? LSP context configuration
 --- @field __active_requests _99.Cleanup[]
 --- @field __view_log_idx number
 
@@ -41,6 +42,7 @@ end
 --- @field provider _99.Provider?
 --- @field debug_log_prefix string?
 --- @field display_errors? boolean
+--- @field lsp _99.Lsp.Config?
 
 --- unanswered question -- will i need to queue messages one at a time or
 --- just send them all...  So to prepare ill be sending around this state object
@@ -52,6 +54,7 @@ end
 --- @field languages string[]
 --- @field display_errors boolean
 --- @field provider_override _99.Provider?
+--- @field lsp_config _99.Lsp.Config?
 --- @field __active_requests _99.Cleanup[]
 --- @field __view_log_idx number
 local _99_State = {}
@@ -125,6 +128,15 @@ end
 
 function _99.info()
     local info = {}
+    local lsp_status = "disabled"
+    if _99_state.lsp_config and _99_state.lsp_config.enabled then
+        lsp_status = string.format(
+            "enabled (depth: %d, timeout: %dms)",
+            _99_state.lsp_config.import_depth,
+            _99_state.lsp_config.timeout
+        )
+    end
+
     table.insert(
         info,
         string.format("Agent Files: %s", table.concat(_99_state.md_files, ", "))
@@ -138,6 +150,7 @@ function _99.info()
         info,
         string.format("Display Errors: %s", tostring(_99_state.display_errors))
     )
+    table.insert(info, string.format("LSP Context: %s", lsp_status))
     table.insert(
         info,
         string.format("Active Requests: %d", _99_state:active_request_count())
@@ -267,6 +280,13 @@ function _99.setup(opts)
     end
 
     _99_state.display_errors = opts.display_errors or false
+
+    local lsp = require("99.lsp")
+    local lsp_config = opts.lsp or lsp.default_config()
+    _99_state.lsp_config = lsp_config
+    if lsp_config.enabled then
+        lsp.setup(lsp_config)
+    end
 
     Languages.initialize(_99_state)
 end

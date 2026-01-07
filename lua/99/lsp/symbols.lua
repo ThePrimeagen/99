@@ -26,14 +26,12 @@ local function parse_document_symbol(doc_symbol)
         signature = nil,
     }
 
-    -- Build a basic signature from name and detail
     if doc_symbol.detail and doc_symbol.detail ~= "" then
         symbol.signature = doc_symbol.name .. ": " .. doc_symbol.detail
     else
         symbol.signature = doc_symbol.name
     end
 
-    -- Recursively parse children
     if doc_symbol.children and #doc_symbol.children > 0 then
         symbol.children = {}
         for _, child in ipairs(doc_symbol.children) do
@@ -48,7 +46,6 @@ end
 --- @param symbol_info table LSP SymbolInformation
 --- @return _99.Lsp.Symbol
 local function parse_symbol_information(symbol_info)
-    -- SymbolInformation has location instead of range
     local range = symbol_info.location and symbol_info.location.range
 
     return {
@@ -70,7 +67,6 @@ local function is_document_symbol_response(result)
     if not result or #result == 0 then
         return false
     end
-    -- DocumentSymbol has 'range' and 'selectionRange', SymbolInformation has 'location'
     return result[1].range ~= nil and result[1].selectionRange ~= nil
 end
 
@@ -85,12 +81,10 @@ function M.parse_symbol_response(result)
     local symbols = {}
 
     if is_document_symbol_response(result) then
-        -- Hierarchical DocumentSymbol format
         for _, doc_symbol in ipairs(result) do
             table.insert(symbols, parse_document_symbol(doc_symbol))
         end
     else
-        -- Flat SymbolInformation format
         for _, symbol_info in ipairs(result) do
             table.insert(symbols, parse_symbol_information(symbol_info))
         end
@@ -105,18 +99,16 @@ end
 function M.get_document_symbols(bufnr, callback)
     local lsp = require("99.lsp")
 
-    -- Check if LSP is available
     if not lsp.is_available(bufnr) then
         callback(nil, "no_lsp_client")
         return
     end
 
-    -- Build request params
+
     local params = {
         textDocument = vim.lsp.util.make_text_document_params(bufnr),
     }
 
-    -- Make the request
     vim.lsp.buf_request(
         bufnr,
         "textDocument/documentSymbol",
@@ -132,7 +124,6 @@ function M.get_document_symbols(bufnr, callback)
                 return
             end
 
-            -- Parse the response
             local symbols = M.parse_symbol_response(result)
             callback(symbols, nil)
         end
@@ -165,18 +156,15 @@ function M.filter_symbols(symbols, include_kinds, exclude_kinds)
     for _, symbol in ipairs(symbols) do
         local include = true
 
-        -- Check include filter
         if include_set and not include_set[symbol.kind] then
             include = false
         end
 
-        -- Check exclude filter
         if exclude_set[symbol.kind] then
             include = false
         end
 
         if include then
-            -- Deep copy and filter children recursively
             local filtered_symbol = vim.tbl_extend("force", {}, symbol)
             if symbol.children and #symbol.children > 0 then
                 filtered_symbol.children = M.filter_symbols(symbol.children, include_kinds, exclude_kinds)
@@ -197,7 +185,6 @@ function M.limit_symbols(symbols, max_symbols)
         return symbols
     end
 
-    -- Count total symbols (including children)
     local function count_symbols(syms)
         local count = #syms
         for _, sym in ipairs(syms) do
@@ -213,14 +200,13 @@ function M.limit_symbols(symbols, max_symbols)
         return symbols
     end
 
-    -- If too many, return only top-level symbols without children
     local result = {}
     for i, symbol in ipairs(symbols) do
         if i > max_symbols then
             break
         end
         local limited = vim.tbl_extend("force", {}, symbol)
-        limited.children = nil -- Remove children to reduce count
+        limited.children = nil
         table.insert(result, limited)
     end
 

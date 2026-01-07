@@ -15,6 +15,7 @@ local random_file = utils.random_file
 --- @field xid number
 --- @field range _99.Range?
 --- @field _99 _99.State
+--- @field lsp_context string? LSP gathered context
 local RequestContext = {}
 RequestContext.__index = RequestContext
 
@@ -89,6 +90,9 @@ end
 --- @return self
 function RequestContext:finalize()
     self:_read_md_files()
+    if self.lsp_context and self.lsp_context ~= "" then
+        table.insert(self.ai_context, self.lsp_context)
+    end
     if self.range then
         table.insert(self.ai_context, self._99.prompts.get_file_location(self))
         table.insert(
@@ -101,6 +105,44 @@ function RequestContext:finalize()
         self._99.prompts.tmp_file_location(self.tmp_file)
     )
     return self
+end
+
+--- Gather LSP context asynchronously
+--- Call this before finalize() to include LSP symbol information
+--- @param callback fun(self: _99.RequestContext) Called when LSP context is gathered (or skipped)
+function RequestContext:gather_lsp_context(callback)
+    local lsp_config = self._99.lsp_config
+    if not lsp_config or not lsp_config.enabled then
+        self.logger:debug("LSP context gathering disabled")
+        callback(self)
+        return
+    end
+
+    local lsp = require("99.lsp")
+    if not lsp.is_available(self.buffer) then
+        self.logger:debug("No LSP client available, skipping LSP context")
+        callback(self)
+        return
+    end
+
+    local lsp_context_builder = require("99.lsp.context")
+    lsp_context_builder.build_context_with_timeout(
+        self,
+        lsp_config.timeout,
+        function(result, err)
+            if err then
+                self.logger:debug("LSP context build failed", "err", err)
+            elseif result then
+                self.lsp_context = result
+                self.logger:info(
+                    "LSP context gathered",
+                    "length",
+                    #result
+                )
+            end
+            callback(self)
+        end
+    )
 end
 
 function RequestContext:clear_marks()

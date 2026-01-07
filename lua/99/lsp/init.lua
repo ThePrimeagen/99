@@ -93,4 +93,29 @@ function M.uri_to_bufnr(uri)
     return bufnr
 end
 
+--- Main entry point for getting LSP context with fallback to treesitter
+--- @param request_context _99.RequestContext
+--- @param callback fun(result: string?, err: string?)
+function M.get_context(request_context, callback)
+    local bufnr = request_context.buffer
+    if M.is_available(bufnr) then
+        local ctx_builder = require("99.lsp.context")
+        ctx_builder.build_context_with_timeout(
+            request_context,
+            M.config.timeout,
+            function(result, err)
+                if result then
+                    callback(result, nil)
+                else
+                    local fallback = require("99.lsp.fallback")
+                    fallback.get_treesitter_context(request_context, callback)
+                end
+            end
+        )
+    else
+        local fallback = require("99.lsp.fallback")
+        fallback.get_treesitter_context(request_context, callback)
+    end
+end
+
 return M
