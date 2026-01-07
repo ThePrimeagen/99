@@ -106,7 +106,7 @@ end
 
 --- Main entry point for getting LSP context with fallback to treesitter
 --- @param request_context _99.RequestContext
---- @param callback fun(result: string?, err: string?)
+--- @param callback fun(result: string?, err: string?, stats: _99.Lsp.ContextStats?)
 function M.get_context(request_context, callback)
     local bufnr = request_context.buffer
     if M.is_available(bufnr) then
@@ -114,9 +114,9 @@ function M.get_context(request_context, callback)
         ctx_builder.build_context_with_timeout(
             request_context,
             M.config.timeout,
-            function(result, err)
+            function(result, err, stats)
                 if result then
-                    callback(result, nil)
+                    callback(result, nil, stats)
                 else
                     local fallback = require("99.lsp.fallback")
                     fallback.get_treesitter_context(request_context, callback)

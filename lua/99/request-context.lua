@@ -16,6 +16,7 @@ local random_file = utils.random_file
 --- @field range _99.Range?
 --- @field _99 _99.State
 --- @field lsp_context string? LSP gathered context
+--- @field lsp_stats _99.Lsp.ContextStats? Statistics from LSP context gathering
 local RequestContext = {}
 RequestContext.__index = RequestContext
 
@@ -129,15 +130,26 @@ function RequestContext:gather_lsp_context(callback)
     lsp_context_builder.build_context_with_timeout(
         self,
         lsp_config.timeout,
-        function(result, err)
+        function(result, err, stats)
             if err then
                 self.logger:debug("LSP context build failed", "err", err)
             elseif result then
                 self.lsp_context = result
+                self.lsp_stats = stats
                 self.logger:info(
                     "LSP context gathered",
                     "length",
-                    #result
+                    #result,
+                    "symbols",
+                    stats and stats.symbols_included or 0,
+                    "imports",
+                    stats and stats.imports_included or 0,
+                    "imports_filtered",
+                    stats and stats.imports_filtered or 0,
+                    "diagnostics",
+                    stats and stats.diagnostics_included or 0,
+                    "budget_used",
+                    stats and stats.budget_used or 0
                 )
             end
             callback(self)
