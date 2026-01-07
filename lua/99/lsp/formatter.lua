@@ -1,8 +1,3 @@
---------------------------------------------------------------------------------
--- LSP FORMATTER
--- Converts LSP symbols to compact, token-efficient format for LLM context
---------------------------------------------------------------------------------
-
 local M = {}
 
 --- LSP SymbolKind constants (from LSP 3.17 specification)

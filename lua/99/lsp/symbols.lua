@@ -1,8 +1,3 @@
---------------------------------------------------------------------------------
--- LSP SYMBOLS MODULE
--- Handles textDocument/documentSymbol requests and response parsing
---------------------------------------------------------------------------------
-
 local formatter = require("99.lsp.formatter")
 
 local M = {}

@@ -1,8 +1,3 @@
---------------------------------------------------------------------------------
--- LSP INTEGRATION MODULE
--- Provides semantic code context (symbols, types, imports) for AI requests
---------------------------------------------------------------------------------
-
 --- @class _99.Lsp.Config
 --- @field enabled boolean Enable/disable LSP context gathering
 --- @field import_depth number Depth of import traversal (0 = current file only, 1 = direct imports)
