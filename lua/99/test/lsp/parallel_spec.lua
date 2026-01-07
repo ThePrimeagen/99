@@ -1,27 +1,34 @@
 -- luacheck: globals describe it assert before_each
+-- luacheck: ignore 311 113
 local parallel = require("99.lsp.parallel")
 local eq = assert.are.same
 
 describe("parallel", function()
     describe("create_collector", function()
         it("should call callback immediately for count 0", function(done)
-            local add_result, is_done = parallel.create_collector(0, function(results)
-                eq({}, results)
-                assert.is_true(is_done())
-                done()
-            end)
+            local add_result, is_done = parallel.create_collector(
+                0,
+                function(results)
+                    eq({}, results)
+                    assert.is_true(is_done())
+                    done()
+                end
+            )
             assert.is_function(add_result)
             assert.is_function(is_done)
         end)
 
         it("should collect results in order", function(done)
-            local add_result, is_done = parallel.create_collector(3, function(results)
-                eq("first", results[1])
-                eq("second", results[2])
-                eq("third", results[3])
-                assert.is_true(is_done())
-                done()
-            end)
+            local add_result, is_done = parallel.create_collector(
+                3,
+                function(results)
+                    eq("first", results[1])
+                    eq("second", results[2])
+                    eq("third", results[3])
+                    assert.is_true(is_done())
+                    done()
+                end
+            )
 
             add_result(3, "third", nil)
             assert.is_false(is_done())
@@ -81,11 +88,15 @@ describe("parallel", function()
         end)
 
         it("should return controller with cancel function", function()
-            local controller = parallel.parallel_map({ 1, 2 }, function(_, _, item_done)
-                vim.defer_fn(function()
-                    item_done("result", nil)
-                end, 100)
-            end, function() end)
+            local controller = parallel.parallel_map(
+                { 1, 2 },
+                function(_, _, item_done)
+                    vim.defer_fn(function()
+                        item_done("result", nil)
+                    end, 100)
+                end,
+                function() end
+            )
 
             assert.is_not_nil(controller)
             assert.is_function(controller.cancel)
@@ -98,13 +109,17 @@ describe("parallel", function()
         it("should stop processing after cancel", function(done)
             local processed = {}
 
-            local controller = parallel.parallel_map({ 1, 2, 3, 4 }, function(item, _, item_done)
-                if item == 2 then
-                    controller.cancel()
-                end
-                table.insert(processed, item)
-                item_done(item, nil)
-            end, function() end)
+            local controller = parallel.parallel_map(
+                { 1, 2, 3, 4 },
+                function(item, _, item_done)
+                    if item == 2 then
+                        controller.cancel()
+                    end
+                    table.insert(processed, item)
+                    item_done(item, nil)
+                end,
+                function() end
+            )
 
             vim.defer_fn(function()
                 assert.is_true(#processed >= 2)
@@ -155,11 +170,15 @@ describe("parallel", function()
         it("should cancel multiple controllers", function()
             local controllers = {}
             for i = 1, 3 do
-                controllers[i] = parallel.parallel_map({ i }, function(_, _, item_done)
-                    vim.defer_fn(function()
-                        item_done("done", nil)
-                    end, 100)
-                end, function() end)
+                controllers[i] = parallel.parallel_map(
+                    { i },
+                    function(_, _, item_done)
+                        vim.defer_fn(function()
+                            item_done("done", nil)
+                        end, 100)
+                    end,
+                    function() end
+                )
             end
 
             parallel.cancel_all(controllers)

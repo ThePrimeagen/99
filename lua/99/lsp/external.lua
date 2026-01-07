@@ -30,16 +30,18 @@ M.external_patterns = {
 --- @return boolean
 function M.is_external_uri(uri)
     local file_path = vim.uri_to_fname(uri)
-    local cwd = vim.fn.getcwd()
 
-    if file_path:sub(1, #cwd) == cwd then
-        return false
-    end
-
+    -- Check external patterns first (node_modules, etc. are external even under cwd)
     for _, pattern in ipairs(M.external_patterns) do
         if file_path:find(pattern, 1, true) then
             return true
         end
+    end
+
+    -- If not matching external patterns, check if outside cwd
+    local cwd = vim.fn.getcwd()
+    if file_path:sub(1, #cwd) ~= cwd then
+        return true
     end
 
     return false
@@ -110,7 +112,10 @@ function M.get_used_symbols(bufnr, external_imports)
         for _, symbol_name in ipairs(imp.symbols or {}) do
             if not seen[symbol_name] then
                 local pattern = "[^%w_]" .. vim.pesc(symbol_name) .. "[^%w_]"
-                if content:find(pattern) or content:find("^" .. vim.pesc(symbol_name) .. "[^%w_]") then
+                if
+                    content:find(pattern)
+                    or content:find("^" .. vim.pesc(symbol_name) .. "[^%w_]")
+                then
                     table.insert(used, symbol_name)
                     seen[symbol_name] = true
                 end
@@ -122,10 +127,10 @@ function M.get_used_symbols(bufnr, external_imports)
 end
 
 --- Fetch type signatures for external symbols using hover
---- @param bufnr number Buffer number (source buffer for LSP client)
+--- @param _bufnr number Buffer number (source buffer for LSP client) - reserved for future use
 --- @param symbol_positions { name: string, position: { line: number, character: number }, uri: string }[]
 --- @param callback fun(types: _99.Lsp.ExternalType[])
-function M.fetch_type_signatures(bufnr, symbol_positions, callback)
+function M.fetch_type_signatures(_bufnr, symbol_positions, callback)
     if not symbol_positions or #symbol_positions == 0 then
         callback({})
         return
@@ -159,7 +164,8 @@ function M.fetch_type_signatures(bufnr, symbol_positions, callback)
 
             hover.get_hover(target_bufnr, sym_pos.position, function(result, _)
                 if result and result.contents then
-                    local type_sig = hover.extract_type_for_external(result.contents)
+                    local type_sig =
+                        hover.extract_type_for_external(result.contents)
                     if type_sig and type_sig ~= "" then
                         table.insert(results, {
                             symbol_name = sym_pos.name,
@@ -200,7 +206,11 @@ function M.format_external_types(types)
         for _, ext_type in ipairs(pkg_types) do
             table.insert(
                 parts,
-                string.format("- %s: %s", ext_type.symbol_name, ext_type.type_signature)
+                string.format(
+                    "- %s: %s",
+                    ext_type.symbol_name,
+                    ext_type.type_signature
+                )
             )
         end
     end
@@ -256,21 +266,27 @@ function M.get_external_types(bufnr, cache, callback)
                 return
             end
 
-            M.fetch_type_signatures(bufnr, uncached_positions, function(new_types)
-                for _, ext_type in ipairs(new_types) do
-                    local cache_key = ext_type.uri .. "#" .. ext_type.symbol_name
-                    cache:set_with_ttl(
-                        cache_key,
-                        { symbols = { ext_type } },
-                        config.external_type_ttl
-                    )
-                end
+            M.fetch_type_signatures(
+                bufnr,
+                uncached_positions,
+                function(new_types)
+                    for _, ext_type in ipairs(new_types) do
+                        local cache_key = ext_type.uri
+                            .. "#"
+                            .. ext_type.symbol_name
+                        cache:set_with_ttl(
+                            cache_key,
+                            { symbols = { ext_type } },
+                            config.external_type_ttl
+                        )
+                    end
 
-                for _, t in ipairs(new_types) do
-                    table.insert(cached_types, t)
+                    for _, t in ipairs(new_types) do
+                        table.insert(cached_types, t)
+                    end
+                    callback(cached_types)
                 end
-                callback(cached_types)
-            end)
+            )
         else
             M.fetch_type_signatures(bufnr, symbol_positions, callback)
         end

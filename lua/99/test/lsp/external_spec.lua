@@ -17,7 +17,8 @@ describe("external", function()
         end)
 
         it("should detect site-packages as external", function()
-            local uri = "file:///usr/lib/python3/site-packages/requests/__init__.py"
+            local uri =
+                "file:///usr/lib/python3/site-packages/requests/__init__.py"
             local old_getcwd = vim.fn.getcwd
             vim.fn.getcwd = function()
                 return "/home/user/project"
@@ -29,7 +30,8 @@ describe("external", function()
         end)
 
         it("should detect go pkg as external", function()
-            local uri = "file:///home/user/go/pkg/mod/github.com/pkg/errors@v0.9.1/errors.go"
+            local uri =
+                "file:///home/user/go/pkg/mod/github.com/pkg/errors@v0.9.1/errors.go"
             local old_getcwd = vim.fn.getcwd
             vim.fn.getcwd = function()
                 return "/home/user/project"
@@ -55,39 +57,55 @@ describe("external", function()
 
     describe("extract_package_name", function()
         it("should extract npm package name", function()
-            eq("lodash", external.extract_package_name("/project/node_modules/lodash/index.js"))
+            eq(
+                "lodash",
+                external.extract_package_name(
+                    "/project/node_modules/lodash/index.js"
+                )
+            )
         end)
 
         it("should extract scoped npm package name", function()
             eq(
                 "@types/node",
-                external.extract_package_name("/project/node_modules/@types/node/index.d.ts")
+                external.extract_package_name(
+                    "/project/node_modules/@types/node/index.d.ts"
+                )
             )
         end)
 
         it("should extract python package name", function()
             eq(
                 "requests",
-                external.extract_package_name("/usr/lib/python3/site-packages/requests/__init__.py")
+                external.extract_package_name(
+                    "/usr/lib/python3/site-packages/requests/__init__.py"
+                )
             )
         end)
 
         it("should extract go module name", function()
             eq(
                 "github.com/pkg/errors",
-                external.extract_package_name("/home/user/go/pkg/mod/github.com/pkg/errors@v0.9.1/errors.go")
+                external.extract_package_name(
+                    "/home/user/go/pkg/mod/github.com/pkg/errors@v0.9.1/errors.go"
+                )
             )
         end)
 
         it("should extract lua module name", function()
             eq(
                 "luasocket",
-                external.extract_package_name("/home/user/.luarocks/share/lua/5.1/luasocket/http.lua")
+                external.extract_package_name(
+                    "/home/user/.luarocks/share/lua/5.1/luasocket/http.lua"
+                )
             )
         end)
 
         it("should fallback to directory name", function()
-            eq("lib", external.extract_package_name("/some/unknown/lib/file.lua"))
+            eq(
+                "lib",
+                external.extract_package_name("/some/unknown/lib/file.lua")
+            )
         end)
     end)
 
@@ -188,7 +206,9 @@ describe("hover type extraction", function()
         it("should extract function as arrow type", function()
             local text = "function foo(a: number): string"
             local result = hover.extract_type_for_external(text)
-            assert.is_true(result:find("=>") ~= nil or result:find("string") ~= nil)
+            assert.is_true(
+                result:find("=>") ~= nil or result:find("string") ~= nil
+            )
         end)
 
         it("should handle class types", function()
@@ -215,7 +235,9 @@ describe("imports external detection", function()
                 return "/home/user/project"
             end
 
-            assert.is_true(imports.is_external_path("/other/node_modules/pkg/index.js"))
+            assert.is_true(
+                imports.is_external_path("/other/node_modules/pkg/index.js")
+            )
 
             vim.fn.getcwd = old_getcwd
         end)
@@ -226,7 +248,9 @@ describe("imports external detection", function()
                 return "/home/user/project"
             end
 
-            assert.is_false(imports.is_external_path("/home/user/project/src/file.lua"))
+            assert.is_false(
+                imports.is_external_path("/home/user/project/src/file.lua")
+            )
 
             vim.fn.getcwd = old_getcwd
         end)
@@ -238,7 +262,9 @@ describe("imports external detection", function()
             end
 
             assert.is_true(
-                imports.is_external_path("file:///other/node_modules/pkg/index.js")
+                imports.is_external_path(
+                    "file:///other/node_modules/pkg/index.js"
+                )
             )
 
             vim.fn.getcwd = old_getcwd

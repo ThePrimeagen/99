@@ -44,19 +44,29 @@ function M.extract_imports_from_buffer(bufnr)
         local import
 
         if filetype == "lua" then
-            local module = line:match('require%s*%(?%s*["\']([^"\']+)["\']')
+            local module = line:match("require%s*%(?%s*[\"']([^\"']+)[\"']")
             if module then
-                local var_name = line:match("^%s*local%s+([%w_]+)%s*=") or module:match("([^%.]+)$")
+                local var_name = line:match("^%s*local%s+([%w_]+)%s*=")
+                    or module:match("([^%.]+)$")
                 if var_name then
                     import = {
                         module_path = module,
                         symbols = { var_name },
-                        position = { line = line_num - 1, character = line:find("require") - 1 or 0 },
+                        position = {
+                            line = line_num - 1,
+                            character = line:find("require") - 1 or 0,
+                        },
                     }
                 end
             end
-        elseif filetype == "typescript" or filetype == "typescriptreact" or filetype == "javascript" or filetype == "javascriptreact" then
-            local named, module = line:match('import%s*{([^}]+)}%s*from%s*["\']([^"\']+)["\']')
+        elseif
+            filetype == "typescript"
+            or filetype == "typescriptreact"
+            or filetype == "javascript"
+            or filetype == "javascriptreact"
+        then
+            local named, module =
+                line:match("import%s*{([^}]+)}%s*from%s*[\"']([^\"']+)[\"']")
             if named and module then
                 local symbol_names = {}
                 for name in named:gmatch("([%w_]+)") do
@@ -68,7 +78,8 @@ function M.extract_imports_from_buffer(bufnr)
                     position = { line = line_num - 1, character = 0 },
                 }
             else
-                local default_import, mod = line:match('import%s+([%w_]+)%s+from%s*["\']([^"\']+)["\']')
+                local default_import, mod =
+                    line:match("import%s+([%w_]+)%s+from%s*[\"']([^\"']+)[\"']")
                 if default_import and mod then
                     import = {
                         module_path = mod,
@@ -76,7 +87,9 @@ function M.extract_imports_from_buffer(bufnr)
                         position = { line = line_num - 1, character = 0 },
                     }
                 else
-                    local namespace, mod2 = line:match('import%s*%*%s*as%s+([%w_]+)%s+from%s*["\']([^"\']+)["\']')
+                    local namespace, mod2 = line:match(
+                        "import%s*%*%s*as%s+([%w_]+)%s+from%s*[\"']([^\"']+)[\"']"
+                    )
                     if namespace and mod2 then
                         import = {
                             module_path = mod2,
@@ -87,7 +100,8 @@ function M.extract_imports_from_buffer(bufnr)
                 end
             end
         elseif filetype == "python" then
-            local module, named = line:match("^%s*from%s+([%w_.]+)%s+import%s+(.+)$")
+            local module, named =
+                line:match("^%s*from%s+([%w_.]+)%s+import%s+(.+)$")
             if module and named then
                 local symbol_names = {}
                 for name in named:gmatch("([%w_]+)") do
@@ -111,8 +125,8 @@ function M.extract_imports_from_buffer(bufnr)
                 end
             end
         elseif filetype == "go" then
-            local pkg = line:match('import%s*["\']([^"\']+)["\']')
-                or line:match('^%s*["\']([^"\']+)["\']')
+            local pkg = line:match("import%s*[\"']([^\"']+)[\"']")
+                or line:match("^%s*[\"']([^\"']+)[\"']")
             if pkg then
                 import = {
                     module_path = pkg,
@@ -143,46 +157,53 @@ function M.resolve_import(bufnr, import, callback)
         return
     end
 
-    definitions.get_definition_with_buffer(bufnr, import.position, function(def, target_bufnr, err)
-        if err or not def or not target_bufnr then
-            callback(import)
-            return
-        end
-
-        import.resolved_uri = def.uri
-        import.is_external = definitions.is_external_definition(def)
-
-        if import.is_external then
-            callback(import)
-            return
-        end
-
-        symbols.get_document_symbols(target_bufnr, function(target_symbols, sym_err)
-            if sym_err or not target_symbols then
+    definitions.get_definition_with_buffer(
+        bufnr,
+        import.position,
+        function(def, target_bufnr, err)
+            if err or not def or not target_bufnr then
                 callback(import)
                 return
             end
 
-            if import.symbols and #import.symbols > 0 then
-                local imported_names = {}
-                for _, name in ipairs(import.symbols) do
-                    imported_names[name] = true
-                end
+            import.resolved_uri = def.uri
+            import.is_external = definitions.is_external_definition(def)
 
-                local filtered = {}
-                for _, sym in ipairs(target_symbols) do
-                    if imported_names[sym.name] then
-                        table.insert(filtered, sym)
-                    end
-                end
-                import.resolved_symbols = filtered
-            else
-                import.resolved_symbols = target_symbols
+            if import.is_external then
+                callback(import)
+                return
             end
 
-            callback(import)
-        end)
-    end)
+            symbols.get_document_symbols(
+                target_bufnr,
+                function(target_symbols, sym_err)
+                    if sym_err or not target_symbols then
+                        callback(import)
+                        return
+                    end
+
+                    if import.symbols and #import.symbols > 0 then
+                        local imported_names = {}
+                        for _, name in ipairs(import.symbols) do
+                            imported_names[name] = true
+                        end
+
+                        local filtered = {}
+                        for _, sym in ipairs(target_symbols) do
+                            if imported_names[sym.name] then
+                                table.insert(filtered, sym)
+                            end
+                        end
+                        import.resolved_symbols = filtered
+                    else
+                        import.resolved_symbols = target_symbols
+                    end
+
+                    callback(import)
+                end
+            )
+        end
+    )
 end
 
 --- Resolve multiple imports

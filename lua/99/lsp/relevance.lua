@@ -19,7 +19,11 @@ function M.find_used_symbols(bufnr, range)
     local seen = {}
 
     for identifier in content:gmatch("[%a_][%w_]*") do
-        if not seen[identifier] and #identifier > 1 and not M.is_keyword(identifier) then
+        if
+            not seen[identifier]
+            and #identifier > 1
+            and not M.is_keyword(identifier)
+        then
             seen[identifier] = true
             table.insert(symbols, identifier)
         end
@@ -183,7 +187,8 @@ function M.filter_relevant_symbols(symbols, used_symbols)
         if used_set[symbol.name] then
             table.insert(relevant, symbol)
         elseif symbol.children then
-            local relevant_children = M.filter_relevant_symbols(symbol.children, used_symbols)
+            local relevant_children =
+                M.filter_relevant_symbols(symbol.children, used_symbols)
             if #relevant_children > 0 then
                 local filtered_symbol = vim.tbl_extend("force", {}, symbol)
                 filtered_symbol.children = relevant_children
@@ -288,7 +293,8 @@ function M._find_symbols_with_treesitter(bufnr, range, parser)
     local seen = {}
 
     local query_str = "(identifier) @id"
-    local ok, query = pcall(vim.treesitter.query.parse, parser:lang(), query_str)
+    local ok, query =
+        pcall(vim.treesitter.query.parse, parser:lang(), query_str)
     if not ok then
         return M.find_used_symbols(bufnr, range)
     end

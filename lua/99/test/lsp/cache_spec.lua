@@ -134,14 +134,17 @@ describe("Cache", function()
                 assert.is_false(cache:is_expired("file:///test.lua"))
             end)
 
-            it("should return false for non-expired entries with TTL", function()
-                cache:set("file:///test.lua", {
-                    uri = "file:///test.lua",
-                    timestamp = vim.uv.now(),
-                    ttl = 60000,
-                })
-                assert.is_false(cache:is_expired("file:///test.lua"))
-            end)
+            it(
+                "should return false for non-expired entries with TTL",
+                function()
+                    cache:set("file:///test.lua", {
+                        uri = "file:///test.lua",
+                        timestamp = vim.uv.now(),
+                        ttl = 60000,
+                    })
+                    assert.is_false(cache:is_expired("file:///test.lua"))
+                end
+            )
 
             it("should return true for expired entries", function()
                 cache:set("file:///test.lua", {

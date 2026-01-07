@@ -92,7 +92,7 @@ describe("Range", function()
             start = { line = 1, character = 2 },
             ["end"] = { line = 2, character = 10 },
         }
-        local range = Range:from_lsp_range(buffer, lsp_range)
+        local range = Range.from_lsp_range(buffer, lsp_range)
 
         eq(2, range.start.row)
         eq(3, range.start.col)
@@ -131,7 +131,8 @@ describe("Point", function()
 
         eq({ line = 9, character = 24 }, lsp_pos)
 
-        local restored = Point:from_lsp_position(lsp_pos.line, lsp_pos.character)
+        local restored =
+            Point:from_lsp_position(lsp_pos.line, lsp_pos.character)
         eq(original.row, restored.row)
         eq(original.col, restored.col)
     end)

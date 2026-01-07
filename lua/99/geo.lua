@@ -272,11 +272,14 @@ end
 --- @param buffer number
 --- @param lsp_range { start: { line: number, character: number }, ["end"]: { line: number, character: number } }
 --- @return _99.Range
-function Range:from_lsp_range(buffer, lsp_range)
+function Range.from_lsp_range(buffer, lsp_range)
     return Range:new(
         buffer,
         Point:from_lsp_position(lsp_range.start.line, lsp_range.start.character),
-        Point:from_lsp_position(lsp_range["end"].line, lsp_range["end"].character)
+        Point:from_lsp_position(
+            lsp_range["end"].line,
+            lsp_range["end"].character
+        )
     )
 end
 

@@ -59,7 +59,8 @@ function M.extract_type_signature(hover_text)
 
     local clean = strip_markdown_fences(hover_text)
 
-    local lua_params, lua_ret = clean:match("function%s*[%w_%.%:]*%((.-)%)%s*:%s*([^\n]+)")
+    local lua_params, lua_ret =
+        clean:match("function%s*[%w_%.%:]*%((.-)%)%s*:%s*([^\n]+)")
     if lua_params then
         return string.format("(%s): %s", lua_params, lua_ret)
     end
@@ -145,7 +146,8 @@ function M.extract_type_for_external(hover_text)
 
     local clean = strip_markdown_fences(hover_text)
 
-    local params, ret = clean:match("function%s*[%w_%.%:]*%((.-)%)%s*:%s*([^%s\n]+)")
+    local params, ret =
+        clean:match("function%s*[%w_%.%:]*%((.-)%)%s*:%s*([^%s\n]+)")
     if params and ret then
         params = params:gsub("%s*=%s*[^,)]+", "")
         return string.format("(%s) => %s", params, ret)
@@ -193,7 +195,10 @@ function M.get_hover(bufnr, position, callback)
         return
     end
 
-    if not client.server_capabilities or not client.server_capabilities.hoverProvider then
+    if
+        not client.server_capabilities
+        or not client.server_capabilities.hoverProvider
+    then
         callback(nil, "hover_not_supported")
         return
     end
@@ -203,23 +208,28 @@ function M.get_hover(bufnr, position, callback)
         position = position,
     }
 
-    vim.lsp.buf_request(bufnr, "textDocument/hover", params, function(err, result, _, _)
-        if err then
-            callback(nil, vim.inspect(err))
-            return
-        end
+    vim.lsp.buf_request(
+        bufnr,
+        "textDocument/hover",
+        params,
+        function(err, result, _, _)
+            if err then
+                callback(nil, vim.inspect(err))
+                return
+            end
 
-        if not result or not result.contents then
-            callback(nil, nil)
-            return
-        end
+            if not result or not result.contents then
+                callback(nil, nil)
+                return
+            end
 
-        local contents = extract_hover_contents(result.contents)
-        callback({
-            contents = contents,
-            range = result.range,
-        }, nil)
-    end)
+            local contents = extract_hover_contents(result.contents)
+            callback({
+                contents = contents,
+                range = result.range,
+            }, nil)
+        end
+    )
 end
 
 --- Batch hover requests for multiple positions
@@ -247,11 +257,16 @@ end
 function M.batch_hover_with_timeout(bufnr, positions, timeout_ms, callback)
     local parallel = require("99.lsp.parallel")
 
-    return parallel.parallel_map_with_timeout(positions, function(position, _, done)
-        M.get_hover(bufnr, position, function(result, err)
-            done(result, err)
-        end)
-    end, timeout_ms, callback)
+    return parallel.parallel_map_with_timeout(
+        positions,
+        function(position, _, done)
+            M.get_hover(bufnr, position, function(result, err)
+                done(result, err)
+            end)
+        end,
+        timeout_ms,
+        callback
+    )
 end
 
 --- Enrich a symbol with hover information

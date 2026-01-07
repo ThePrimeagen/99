@@ -176,14 +176,24 @@ end
 --- @param timeout_ms number Timeout in milliseconds
 --- @param callback fun(results: (_99.Lsp.SignatureHelp?)[], timed_out: boolean)
 --- @return _99.Lsp.ParallelController? controller
-function M.batch_signature_help_with_timeout(bufnr, positions, timeout_ms, callback)
+function M.batch_signature_help_with_timeout(
+    bufnr,
+    positions,
+    timeout_ms,
+    callback
+)
     local parallel = require("99.lsp.parallel")
 
-    return parallel.parallel_map_with_timeout(positions, function(position, _, done)
-        M.get_signature_help(bufnr, position, function(result, err)
-            done(result, err)
-        end)
-    end, timeout_ms, callback)
+    return parallel.parallel_map_with_timeout(
+        positions,
+        function(position, _, done)
+            M.get_signature_help(bufnr, position, function(result, err)
+                done(result, err)
+            end)
+        end,
+        timeout_ms,
+        callback
+    )
 end
 
 --- Format signature help for context output

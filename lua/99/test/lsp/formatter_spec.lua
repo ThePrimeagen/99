@@ -79,7 +79,8 @@ describe("formatter", function()
 
     describe("format_symbol", function()
         it("should format symbol with signature", function()
-            local symbol = { name = "test", kind = 12, signature = "(a: number): string" }
+            local symbol =
+                { name = "test", kind = 12, signature = "(a: number): string" }
             local result = formatter.format_symbol(symbol, 0)
             eq("fn (a: number): string", result)
         end)
@@ -97,7 +98,8 @@ describe("formatter", function()
         end)
 
         it("should use keyword for method", function()
-            local symbol = { name = "doSomething", kind = 6, signature = "(): void" }
+            local symbol =
+                { name = "doSomething", kind = 6, signature = "(): void" }
             local result = formatter.format_symbol(symbol, 0)
             eq("(): void", result)
         end)
@@ -110,7 +112,11 @@ describe("formatter", function()
                 kind = 5,
                 children = {
                     { name = "init", kind = 9, signature = "()" },
-                    { name = "process", kind = 6, signature = "(data: any): void" },
+                    {
+                        name = "process",
+                        kind = 6,
+                        signature = "(data: any): void",
+                    },
                 },
             }
             local lines = formatter.format_symbol_with_children(symbol, 0)
@@ -144,11 +150,16 @@ describe("formatter", function()
         it("should format complete file context", function()
             local symbols = {
                 { name = "fn1", kind = 12 },
-                { name = "MyClass", kind = 5, children = {
-                    { name = "method", kind = 6 },
-                } },
+                {
+                    name = "MyClass",
+                    kind = 5,
+                    children = {
+                        { name = "method", kind = 6 },
+                    },
+                },
             }
-            local result = formatter.format_file_context("/test/file.lua", symbols)
+            local result =
+                formatter.format_file_context("/test/file.lua", symbols)
             assert.is_true(result:find("=== File: /test/file.lua ===") ~= nil)
             assert.is_true(result:find("Symbols:") ~= nil)
             assert.is_true(result:find("fn1") ~= nil)
@@ -208,17 +219,31 @@ describe("formatter", function()
         end)
 
         it("should handle missing optional fields", function()
-            local diag = { severity = 2, lnum = 0, col = 0, message = "Warning" }
+            local diag =
+                { severity = 2, lnum = 0, col = 0, message = "Warning" }
             local result = formatter.format_diagnostic(diag)
             assert.is_true(result:find("WARN") ~= nil)
             assert.is_true(result:find("Warning") ~= nil)
         end)
 
         it("should use correct severity names", function()
-            eq(true, formatter.format_diagnostic({ severity = 1, lnum = 0, col = 0, message = "" }):find("ERROR") ~= nil)
-            eq(true, formatter.format_diagnostic({ severity = 2, lnum = 0, col = 0, message = "" }):find("WARN") ~= nil)
-            eq(true, formatter.format_diagnostic({ severity = 3, lnum = 0, col = 0, message = "" }):find("INFO") ~= nil)
-            eq(true, formatter.format_diagnostic({ severity = 4, lnum = 0, col = 0, message = "" }):find("HINT") ~= nil)
+            local diag = { lnum = 0, col = 0, message = "" }
+            diag.severity = 1
+            assert.is_true(
+                formatter.format_diagnostic(diag):find("ERROR") ~= nil
+            )
+            diag.severity = 2
+            assert.is_true(
+                formatter.format_diagnostic(diag):find("WARN") ~= nil
+            )
+            diag.severity = 3
+            assert.is_true(
+                formatter.format_diagnostic(diag):find("INFO") ~= nil
+            )
+            diag.severity = 4
+            assert.is_true(
+                formatter.format_diagnostic(diag):find("HINT") ~= nil
+            )
         end)
     end)
 
@@ -246,9 +271,21 @@ describe("formatter", function()
     describe("format_external_types", function()
         it("should group types by package", function()
             local types = {
-                { symbol_name = "A", type_signature = "class A", package_name = "pkg1" },
-                { symbol_name = "B", type_signature = "class B", package_name = "pkg1" },
-                { symbol_name = "C", type_signature = "fn", package_name = "pkg2" },
+                {
+                    symbol_name = "A",
+                    type_signature = "class A",
+                    package_name = "pkg1",
+                },
+                {
+                    symbol_name = "B",
+                    type_signature = "class B",
+                    package_name = "pkg1",
+                },
+                {
+                    symbol_name = "C",
+                    type_signature = "fn",
+                    package_name = "pkg2",
+                },
             }
             local result = formatter.format_external_types(types)
             assert.is_true(result:find("External Types:") ~= nil)
@@ -258,7 +295,11 @@ describe("formatter", function()
 
         it("should format symbol with type signature", function()
             local types = {
-                { symbol_name = "MyClass", type_signature = "class MyClass", package_name = "pkg" },
+                {
+                    symbol_name = "MyClass",
+                    type_signature = "class MyClass",
+                    package_name = "pkg",
+                },
             }
             local result = formatter.format_external_types(types)
             assert.is_true(result:find("MyClass: class MyClass") ~= nil)
@@ -329,7 +370,8 @@ describe("formatter", function()
 
         it("should return content when within budget", function()
             local content = "Short"
-            local result, truncated = formatter.format_with_budget(content, budget)
+            local result, truncated =
+                formatter.format_with_budget(content, budget)
             eq(content, result)
             assert.is_false(truncated)
         end)
@@ -337,7 +379,8 @@ describe("formatter", function()
         it("should truncate when over budget", function()
             local tiny_budget = Budget.new(3, 1)
             local content = "This is too long"
-            local result, truncated = formatter.format_with_budget(content, tiny_budget)
+            local result, truncated =
+                formatter.format_with_budget(content, tiny_budget)
             assert.is_true(truncated)
             assert.is_true(#result <= 3)
         end)
@@ -345,7 +388,8 @@ describe("formatter", function()
         it("should return empty string when no budget remaining", function()
             local full_budget = Budget.new(5, 1)
             full_budget:consume("fill", "12345")
-            local result, truncated = formatter.format_with_budget("content", full_budget)
+            local result, truncated =
+                formatter.format_with_budget("content", full_budget)
             eq("", result)
             assert.is_true(truncated)
         end)

@@ -76,28 +76,39 @@ function M.build_context(request_context, callback)
         doc_symbols = symbols_mod.limit_symbols(doc_symbols, config.max_symbols)
         stats.symbols_included = #doc_symbols
 
-        local used_symbols = relevance.find_used_symbols_smart(bufnr, current_range)
+        local used_symbols =
+            relevance.find_used_symbols_smart(bufnr, current_range)
 
         hover.enrich_symbols(bufnr, doc_symbols, function(enriched_symbols)
             local diags = {}
             if config.include_diagnostics then
-                diags = diagnostics_mod.get_errors_and_warnings(bufnr, current_range)
+                diags = diagnostics_mod.get_errors_and_warnings(
+                    bufnr,
+                    current_range
+                )
                 stats.diagnostics_included = #diags
             end
 
             imports_mod.get_imports(bufnr, true, function(all_imports)
                 local original_count = #(all_imports or {})
 
-                local relevant_imports = {}
+                local relevant_imports
                 if config.relevance_filter and #used_symbols > 0 then
-                    relevant_imports = relevance.filter_relevant_imports(all_imports or {}, used_symbols)
+                    relevant_imports = relevance.filter_relevant_imports(
+                        all_imports or {},
+                        used_symbols
+                    )
                 else
                     relevant_imports = all_imports or {}
                 end
 
                 local valid_imports = {}
                 for _, imp in ipairs(relevant_imports) do
-                    if not imp.is_external and imp.resolved_uri and not imports_mod.is_visited(imp.resolved_uri) then
+                    if
+                        not imp.is_external
+                        and imp.resolved_uri
+                        and not imports_mod.is_visited(imp.resolved_uri)
+                    then
                         imports_mod.mark_visited(imp.resolved_uri)
                         table.insert(valid_imports, imp)
                     end
@@ -106,12 +117,32 @@ function M.build_context(request_context, callback)
                 stats.imports_included = #valid_imports
                 stats.imports_filtered = original_count - #valid_imports
 
-                M._enrich_import_symbols(bufnr, valid_imports, function(enriched_imports)
-                    local ext_types = {}
-                    if config.include_external_types then
-                        external.get_external_types(bufnr, lsp.cache, function(types)
-                            ext_types = types or {}
-                            stats.external_types_included = #ext_types
+                M._enrich_import_symbols(
+                    bufnr,
+                    valid_imports,
+                    function(enriched_imports)
+                        local ext_types = {}
+                        if config.include_external_types then
+                            external.get_external_types(
+                                bufnr,
+                                lsp.cache,
+                                function(types)
+                                    ext_types = types or {}
+                                    stats.external_types_included = #ext_types
+                                    M._format_and_return(
+                                        request_context,
+                                        enriched_symbols,
+                                        enriched_imports,
+                                        diags,
+                                        ext_types,
+                                        budget,
+                                        stats,
+                                        logger,
+                                        callback
+                                    )
+                                end
+                            )
+                        else
                             M._format_and_return(
                                 request_context,
                                 enriched_symbols,
@@ -123,21 +154,9 @@ function M.build_context(request_context, callback)
                                 logger,
                                 callback
                             )
-                        end)
-                    else
-                        M._format_and_return(
-                            request_context,
-                            enriched_symbols,
-                            enriched_imports,
-                            diags,
-                            ext_types,
-                            budget,
-                            stats,
-                            logger,
-                            callback
-                        )
+                        end
                     end
-                end)
+                )
             end)
         end)
     end)
@@ -159,7 +178,8 @@ function M._format_and_return(
     local formatter = require("99.lsp.formatter")
     local parts = {}
 
-    local symbols_context = formatter.format_file_context(request_context.full_path, symbols)
+    local symbols_context =
+        formatter.format_file_context(request_context.full_path, symbols)
     if budget:can_fit(symbols_context) then
         budget:consume("symbols", symbols_context)
         table.insert(parts, symbols_context)
@@ -197,15 +217,21 @@ function M._format_and_return(
     stats.budget_remaining = budget_stats.remaining_chars
 
     local result = table.concat(parts, "\n")
-    logger:debug("Built LSP context", "length", #result, "budget_used", stats.budget_used)
+    logger:debug(
+        "Built LSP context",
+        "length",
+        #result,
+        "budget_used",
+        stats.budget_used
+    )
     callback(result, nil, stats)
 end
 
 --- Enrich imported symbols with hover information
---- @param source_bufnr number Source buffer (for LSP client)
+--- @param _source_bufnr number Source buffer (for LSP client) - reserved for future use
 --- @param resolved_imports _99.Lsp.Import[] Resolved imports
 --- @param callback fun(imports: _99.Lsp.Import[])
-function M._enrich_import_symbols(source_bufnr, resolved_imports, callback)
+function M._enrich_import_symbols(_source_bufnr, resolved_imports, callback)
     if not resolved_imports or #resolved_imports == 0 then
         callback({})
         return
@@ -228,19 +254,30 @@ function M._enrich_import_symbols(source_bufnr, resolved_imports, callback)
     end
 
     for _, imp in ipairs(resolved_imports) do
-        if imp.resolved_symbols and #imp.resolved_symbols > 0 and imp.resolved_uri then
+        if
+            imp.resolved_symbols
+            and #imp.resolved_symbols > 0
+            and imp.resolved_uri
+        then
             local file_path = vim.uri_to_fname(imp.resolved_uri)
-            definitions.ensure_buffer_loaded(file_path, function(target_bufnr, err)
-                if err or not target_bufnr then
-                    check_done()
-                    return
-                end
+            definitions.ensure_buffer_loaded(
+                file_path,
+                function(target_bufnr, err)
+                    if err or not target_bufnr then
+                        check_done()
+                        return
+                    end
 
-                hover.enrich_symbols(target_bufnr, imp.resolved_symbols, function(enriched)
-                    imp.resolved_symbols = enriched
-                    check_done()
-                end)
-            end)
+                    hover.enrich_symbols(
+                        target_bufnr,
+                        imp.resolved_symbols,
+                        function(enriched)
+                            imp.resolved_symbols = enriched
+                            check_done()
+                        end
+                    )
+                end
+            )
         else
             check_done()
         end
@@ -255,14 +292,18 @@ function M.build_context_with_timeout(request_context, timeout_ms, callback)
     local completed = false
     local timer = vim.uv.new_timer()
 
-    timer:start(timeout_ms, 0, vim.schedule_wrap(function()
-        if not completed then
-            completed = true
-            timer:stop()
-            timer:close()
-            callback(nil, "timeout", nil)
-        end
-    end))
+    timer:start(
+        timeout_ms,
+        0,
+        vim.schedule_wrap(function()
+            if not completed then
+                completed = true
+                timer:stop()
+                timer:close()
+                callback(nil, "timeout", nil)
+            end
+        end)
+    )
 
     M.build_context(request_context, function(result, err, stats)
         if completed then

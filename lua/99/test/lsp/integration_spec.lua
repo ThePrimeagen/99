@@ -1,4 +1,5 @@
 -- luacheck: globals describe it assert before_each
+-- luacheck: ignore 113
 local eq = assert.are.same
 
 describe("LSP module integration", function()
@@ -183,9 +184,13 @@ describe("LSP module integration", function()
             local budget = Budget.new(100, 4)
             local symbols = {
                 { name = "testFn", kind = 12 },
-                { name = "MyClass", kind = 5, children = {
-                    { name = "method", kind = 6 },
-                } },
+                {
+                    name = "MyClass",
+                    kind = 5,
+                    children = {
+                        { name = "method", kind = 6 },
+                    },
+                },
             }
 
             local context = formatter.format_file_context("/test.lua", symbols)
@@ -206,7 +211,10 @@ describe("LSP module integration", function()
                 {
                     module_path = "utils",
                     symbols = { "helper", "format" },
-                    resolved_symbols = { { name = "helper" }, { name = "format" } },
+                    resolved_symbols = {
+                        { name = "helper" },
+                        { name = "format" },
+                    },
                 },
                 {
                     module_path = "unused",
@@ -230,13 +238,16 @@ describe("LSP module integration", function()
         it("should work with collect_results pattern", function(done)
             local parallel = require("99.lsp.parallel")
 
-            local add_result, is_done = parallel.create_collector(3, function(results)
-                eq("a", results[1])
-                eq("b", results[2])
-                eq("c", results[3])
-                assert.is_true(is_done())
-                done()
-            end)
+            local add_result, is_done = parallel.create_collector(
+                3,
+                function(results)
+                    eq("a", results[1])
+                    eq("b", results[2])
+                    eq("c", results[3])
+                    assert.is_true(is_done())
+                    done()
+                end
+            )
 
             add_result(1, "a", nil)
             add_result(2, "b", nil)
@@ -280,8 +291,15 @@ describe("LSP module integration", function()
                 name = "MyClass",
                 kind = formatter.SymbolKind.Class,
                 children = {
-                    { name = "constructor", kind = formatter.SymbolKind.Constructor },
-                    { name = "method", kind = formatter.SymbolKind.Method, signature = "(arg: string): void" },
+                    {
+                        name = "constructor",
+                        kind = formatter.SymbolKind.Constructor,
+                    },
+                    {
+                        name = "method",
+                        kind = formatter.SymbolKind.Method,
+                        signature = "(arg: string): void",
+                    },
                 },
             }
 

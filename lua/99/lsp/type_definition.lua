@@ -2,9 +2,9 @@ local M = {}
 
 --- @class _99.Lsp.TypeDefinition
 --- @field uri string Document URI
---- @field range { start: { line: number, character: number }, ["end"]: { line: number, character: number } }
+--- @field range table LSP Range with start/end positions
 --- @field file_path string Converted from URI (convenience)
---- @field target_selection_range { start: { line: number, character: number }, ["end"]: { line: number, character: number } }? For LocationLink
+--- @field target_selection_range table? LSP Range for LocationLink
 
 --- Parse LSP typeDefinition response (handles Location, Location[], LocationLink[])
 --- @param result table|table[]|nil LSP response
@@ -139,14 +139,24 @@ end
 --- @param timeout_ms number Timeout in milliseconds
 --- @param callback fun(results: _99.Lsp.TypeDefinition[][], timed_out: boolean)
 --- @return _99.Lsp.ParallelController? controller
-function M.batch_type_definitions_with_timeout(bufnr, positions, timeout_ms, callback)
+function M.batch_type_definitions_with_timeout(
+    bufnr,
+    positions,
+    timeout_ms,
+    callback
+)
     local parallel = require("99.lsp.parallel")
 
-    return parallel.parallel_map_with_timeout(positions, function(position, _, done)
-        M.get_type_definition(bufnr, position, function(defs, err)
-            done(defs, err)
-        end)
-    end, timeout_ms, callback)
+    return parallel.parallel_map_with_timeout(
+        positions,
+        function(position, _, done)
+            M.get_type_definition(bufnr, position, function(defs, err)
+                done(defs, err)
+            end)
+        end,
+        timeout_ms,
+        callback
+    )
 end
 
 --- Check if type definition points to an external package
@@ -166,7 +176,11 @@ function M.format_for_context(def)
     if def.range then
         table.insert(
             parts,
-            string.format(":%d:%d", def.range.start.line + 1, def.range.start.character + 1)
+            string.format(
+                ":%d:%d",
+                def.range.start.line + 1,
+                def.range.start.character + 1
+            )
         )
     end
     return table.concat(parts, "")

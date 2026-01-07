@@ -111,7 +111,10 @@ local function get_node_name(node, bufnr)
     end
 
     for child in node:iter_children() do
-        if child:type() == "identifier" or child:type() == "property_identifier" then
+        if
+            child:type() == "identifier"
+            or child:type() == "property_identifier"
+        then
             return vim.treesitter.get_node_text(child, bufnr)
         end
     end
@@ -228,7 +231,8 @@ function M.get_treesitter_context(request_context, callback)
         return
     end
 
-    local result = formatter.format_file_context(request_context.full_path, symbols)
+    local result =
+        formatter.format_file_context(request_context.full_path, symbols)
     callback(result, nil)
 end
 

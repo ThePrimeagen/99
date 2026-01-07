@@ -102,7 +102,6 @@ function M.get_document_symbols(bufnr, callback)
         return
     end
 
-
     local params = {
         textDocument = vim.lsp.util.make_text_document_params(bufnr),
     }
@@ -165,7 +164,11 @@ function M.filter_symbols(symbols, include_kinds, exclude_kinds)
         if include then
             local filtered_symbol = vim.tbl_extend("force", {}, symbol)
             if symbol.children and #symbol.children > 0 then
-                filtered_symbol.children = M.filter_symbols(symbol.children, include_kinds, exclude_kinds)
+                filtered_symbol.children = M.filter_symbols(
+                    symbol.children,
+                    include_kinds,
+                    exclude_kinds
+                )
             end
             table.insert(result, filtered_symbol)
         end

@@ -2,9 +2,9 @@ local M = {}
 
 --- @class _99.Lsp.Definition
 --- @field uri string File URI where definition is located
---- @field range { start: { line: number, character: number }, ["end"]: { line: number, character: number } }
+--- @field range table LSP Range with start/end positions
 --- @field file_path string Resolved local file path
---- @field targetSelectionRange { start: { line: number, character: number }, ["end"]: { line: number, character: number } }?
+--- @field targetSelectionRange table? LSP Range for LocationLink
 
 --- Parse a Location response
 --- @param location table LSP Location
@@ -78,7 +78,10 @@ function M.get_definition(bufnr, position, callback)
         return
     end
 
-    if not client.server_capabilities or not client.server_capabilities.definitionProvider then
+    if
+        not client.server_capabilities
+        or not client.server_capabilities.definitionProvider
+    then
         callback(nil, "definition_not_supported")
         return
     end
@@ -88,15 +91,20 @@ function M.get_definition(bufnr, position, callback)
         position = position,
     }
 
-    vim.lsp.buf_request(bufnr, "textDocument/definition", params, function(err, result, _, _)
-        if err then
-            callback(nil, vim.inspect(err))
-            return
-        end
+    vim.lsp.buf_request(
+        bufnr,
+        "textDocument/definition",
+        params,
+        function(err, result, _, _)
+            if err then
+                callback(nil, vim.inspect(err))
+                return
+            end
 
-        local definitions = M.parse_definition_response(result)
-        callback(definitions, nil)
-    end)
+            local definitions = M.parse_definition_response(result)
+            callback(definitions, nil)
+        end
+    )
 end
 
 --- Load a file into a buffer without switching to it

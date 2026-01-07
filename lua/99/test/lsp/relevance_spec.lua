@@ -45,17 +45,26 @@ describe("relevance", function()
                 {
                     module_path = "utils",
                     symbols = { "format", "parse" },
-                    resolved_symbols = { { name = "format" }, { name = "parse" } },
+                    resolved_symbols = {
+                        { name = "format" },
+                        { name = "parse" },
+                    },
                 },
                 {
                     module_path = "helpers",
                     symbols = { "calculate", "validate" },
-                    resolved_symbols = { { name = "calculate" }, { name = "validate" } },
+                    resolved_symbols = {
+                        { name = "calculate" },
+                        { name = "validate" },
+                    },
                 },
                 {
                     module_path = "constants",
                     symbols = { "MAX_VALUE", "MIN_VALUE" },
-                    resolved_symbols = { { name = "MAX_VALUE" }, { name = "MIN_VALUE" } },
+                    resolved_symbols = {
+                        { name = "MAX_VALUE" },
+                        { name = "MIN_VALUE" },
+                    },
                 },
             }
         end)
@@ -101,10 +110,14 @@ describe("relevance", function()
 
         before_each(function()
             symbols = {
-                { name = "MyClass", kind = 5, children = {
-                    { name = "init", kind = 6 },
-                    { name = "process", kind = 6 },
-                } },
+                {
+                    name = "MyClass",
+                    kind = 5,
+                    children = {
+                        { name = "init", kind = 6 },
+                        { name = "process", kind = 6 },
+                    },
+                },
                 { name = "helperFn", kind = 12 },
                 { name = "CONSTANT", kind = 14 },
             }

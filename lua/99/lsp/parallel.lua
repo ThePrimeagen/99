@@ -20,7 +20,9 @@ function M.create_collector(count, on_complete)
         vim.schedule(function()
             on_complete({})
         end)
-        return function() end, function() return true end
+        return function() end, function()
+            return true
+        end
     end
 
     local results = {}
@@ -112,14 +114,18 @@ function M.parallel_map_with_timeout(items, executor, timeout_ms, callback)
         callback(results, timed_out)
     end
 
-    timer:start(timeout_ms, 0, vim.schedule_wrap(function()
-        if not completed then
-            if controller then
-                controller.cancel()
+    timer:start(
+        timeout_ms,
+        0,
+        vim.schedule_wrap(function()
+            if not completed then
+                if controller then
+                    controller.cancel()
+                end
+                finish({}, true)
             end
-            finish({}, true)
-        end
-    end))
+        end)
+    )
 
     controller = M.parallel_map(items, executor, function(results)
         finish(results, false)
@@ -158,7 +164,13 @@ end
 --- @param timeout_ms number Timeout in milliseconds
 --- @param callback fun(results: table<number, any>, timed_out: boolean)
 --- @return _99.Lsp.ParallelController controller
-function M.batch_lsp_request_with_timeout(bufnr, method, positions, timeout_ms, callback)
+function M.batch_lsp_request_with_timeout(
+    bufnr,
+    method,
+    positions,
+    timeout_ms,
+    callback
+)
     return M.parallel_map_with_timeout(positions, function(position, _, done)
         local params = {
             textDocument = vim.lsp.util.make_text_document_params(bufnr),

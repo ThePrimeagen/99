@@ -62,7 +62,10 @@ function M.is_available(bufnr)
     end
 
     for _, client in ipairs(clients) do
-        if client.server_capabilities and client.server_capabilities.documentSymbolProvider then
+        if
+            client.server_capabilities
+            and client.server_capabilities.documentSymbolProvider
+        then
             return true
         end
     end
@@ -77,7 +80,10 @@ function M.get_client(bufnr)
     local clients = vim.lsp.get_clients({ bufnr = bufnr })
 
     for _, client in ipairs(clients) do
-        if client.server_capabilities and client.server_capabilities.documentSymbolProvider then
+        if
+            client.server_capabilities
+            and client.server_capabilities.documentSymbolProvider
+        then
             return client
         end
     end
@@ -114,7 +120,7 @@ function M.get_context(request_context, callback)
         ctx_builder.build_context_with_timeout(
             request_context,
             M.config.timeout,
-            function(result, err, stats)
+            function(result, _err, stats)
                 if result then
                     callback(result, nil, stats)
                 else

@@ -30,11 +30,16 @@ describe("context", function()
             }
         end)
 
-        it("should format symbols context", function(done)
+        it("should format symbols context", function()
             local symbols = {
-                { name = "testFn", kind = 12, signature = "(a: number): string" },
+                {
+                    name = "testFn",
+                    kind = 12,
+                    signature = "(a: number): string",
+                },
             }
 
+            local test_result, test_err, test_stats
             context._format_and_return(
                 request_context,
                 symbols,
@@ -45,17 +50,20 @@ describe("context", function()
                 stats,
                 logger,
                 function(result, err, result_stats)
-                    assert.is_nil(err)
-                    assert.is_not_nil(result)
-                    assert.is_true(result:find("File: /test/file.lua") ~= nil)
-                    assert.is_true(result:find("testFn") ~= nil)
-                    assert.is_true(result_stats.budget_used > 0)
-                    done()
+                    test_result = result
+                    test_err = err
+                    test_stats = result_stats
                 end
             )
+
+            assert.is_nil(test_err)
+            assert.is_not_nil(test_result)
+            assert.is_true(test_result:find("File: /test/file.lua") ~= nil)
+            assert.is_true(test_result:find("testFn") ~= nil)
+            assert.is_true(test_stats.budget_used > 0)
         end)
 
-        it("should include diagnostics in output", function(done)
+        it("should include diagnostics in output", function()
             local symbols = {
                 { name = "fn", kind = 12 },
             }
@@ -63,6 +71,7 @@ describe("context", function()
                 { severity = 1, lnum = 5, col = 0, message = "Test error" },
             }
 
+            local test_result, test_err
             context._format_and_return(
                 request_context,
                 symbols,
@@ -73,25 +82,30 @@ describe("context", function()
                 stats,
                 logger,
                 function(result, err, _)
-                    assert.is_nil(err)
-                    assert.is_true(result:find("Diagnostics") ~= nil)
-                    assert.is_true(result:find("Test error") ~= nil)
-                    done()
+                    test_result = result
+                    test_err = err
                 end
             )
+
+            assert.is_nil(test_err)
+            assert.is_true(test_result:find("Diagnostics") ~= nil)
+            assert.is_true(test_result:find("Test error") ~= nil)
         end)
 
-        it("should include imports in output", function(done)
+        it("should include imports in output", function()
             local symbols = {
                 { name = "fn", kind = 12 },
             }
             local imports = {
                 {
                     module_path = "utils",
-                    resolved_symbols = { { name = "helper", signature = "(): void" } },
+                    resolved_symbols = {
+                        { name = "helper", signature = "(): void" },
+                    },
                 },
             }
 
+            local test_result, test_err
             context._format_and_return(
                 request_context,
                 symbols,
@@ -102,15 +116,17 @@ describe("context", function()
                 stats,
                 logger,
                 function(result, err, _)
-                    assert.is_nil(err)
-                    assert.is_true(result:find("Imports") ~= nil)
-                    assert.is_true(result:find("utils") ~= nil)
-                    done()
+                    test_result = result
+                    test_err = err
                 end
             )
+
+            assert.is_nil(test_err)
+            assert.is_true(test_result:find("Imports") ~= nil)
+            assert.is_true(test_result:find("utils") ~= nil)
         end)
 
-        it("should include external types in output", function(done)
+        it("should include external types in output", function()
             local symbols = {
                 { name = "fn", kind = 12 },
             }
@@ -122,6 +138,7 @@ describe("context", function()
                 },
             }
 
+            local test_result, test_err
             context._format_and_return(
                 request_context,
                 symbols,
@@ -132,20 +149,23 @@ describe("context", function()
                 stats,
                 logger,
                 function(result, err, _)
-                    assert.is_nil(err)
-                    assert.is_true(result:find("External Types") ~= nil)
-                    assert.is_true(result:find("external%-pkg") ~= nil)
-                    done()
+                    test_result = result
+                    test_err = err
                 end
             )
+
+            assert.is_nil(test_err)
+            assert.is_true(test_result:find("External Types") ~= nil)
+            assert.is_true(test_result:find("external%-pkg") ~= nil)
         end)
 
-        it("should track budget usage in stats", function(done)
+        it("should track budget usage in stats", function()
             local symbols = {
                 { name = "fn1", kind = 12 },
                 { name = "fn2", kind = 12 },
             }
 
+            local test_stats
             context._format_and_return(
                 request_context,
                 symbols,
@@ -156,21 +176,22 @@ describe("context", function()
                 stats,
                 logger,
                 function(_, _, result_stats)
-                    assert.is_true(result_stats.budget_used > 0)
-                    assert.is_true(result_stats.budget_remaining > 0)
-                    eq(result_stats.budget_used + result_stats.budget_remaining,
-                        1000 * 4)
-                    done()
+                    test_stats = result_stats
                 end
             )
+
+            assert.is_true(test_stats.budget_used > 0)
+            assert.is_true(test_stats.budget_remaining > 0)
+            eq(test_stats.budget_used + test_stats.budget_remaining, 1000 * 4)
         end)
 
-        it("should truncate content when budget exceeded", function(done)
+        it("should truncate content when budget exceeded", function()
             local small_budget = Budget.new(10, 1)
             local symbols = {
                 { name = "veryLongFunctionNameThatExceedsBudget", kind = 12 },
             }
 
+            local test_result, test_err
             context._format_and_return(
                 request_context,
                 symbols,
@@ -181,11 +202,13 @@ describe("context", function()
                 stats,
                 logger,
                 function(result, err, _)
-                    assert.is_nil(err)
-                    assert.is_true(#result <= 13)
-                    done()
+                    test_result = result
+                    test_err = err
                 end
             )
+
+            assert.is_nil(test_err)
+            assert.is_true(#test_result <= 13)
         end)
     end)
 end)
@@ -215,9 +238,21 @@ describe("formatter integration", function()
     describe("format_external_types", function()
         it("should format external types grouped by package", function()
             local types = {
-                { symbol_name = "ClassA", type_signature = "class", package_name = "pkg1" },
-                { symbol_name = "ClassB", type_signature = "class", package_name = "pkg1" },
-                { symbol_name = "FuncC", type_signature = "() => void", package_name = "pkg2" },
+                {
+                    symbol_name = "ClassA",
+                    type_signature = "class",
+                    package_name = "pkg1",
+                },
+                {
+                    symbol_name = "ClassB",
+                    type_signature = "class",
+                    package_name = "pkg1",
+                },
+                {
+                    symbol_name = "FuncC",
+                    type_signature = "() => void",
+                    package_name = "pkg2",
+                },
             }
             local result = formatter.format_external_types(types)
             assert.is_true(result:find("External Types") ~= nil)
@@ -241,7 +276,10 @@ describe("formatter integration", function()
             local sig_help = {
                 signatures = {
                     { label = "fn(a: number, b: string): boolean" },
-                    { label = "fn(a: number): void", documentation = "Overload docs" },
+                    {
+                        label = "fn(a: number): void",
+                        documentation = "Overload docs",
+                    },
                 },
             }
             local result = formatter.format_signature_help(sig_help)
@@ -263,7 +301,8 @@ describe("formatter integration", function()
         it("should return content unchanged when within budget", function()
             local budget = Budget.new(1000, 4)
             local content = "Short content"
-            local result, truncated = formatter.format_with_budget(content, budget)
+            local result, truncated =
+                formatter.format_with_budget(content, budget)
             eq(content, result)
             assert.is_false(truncated)
         end)
@@ -272,7 +311,8 @@ describe("formatter integration", function()
             local budget = Budget.new(5, 1)
             budget:consume("test", "fill")
             local content = "This is a very long content string"
-            local result, truncated = formatter.format_with_budget(content, budget)
+            local result, truncated =
+                formatter.format_with_budget(content, budget)
             assert.is_true(truncated)
             assert.is_true(#result < #content)
             assert.is_true(result:find("%.%.%.$") ~= nil)
@@ -281,7 +321,8 @@ describe("formatter integration", function()
         it("should return empty when no budget remaining", function()
             local budget = Budget.new(5, 1)
             budget:consume("test", "12345")
-            local result, truncated = formatter.format_with_budget("more content", budget)
+            local result, truncated =
+                formatter.format_with_budget("more content", budget)
             eq("", result)
             assert.is_true(truncated)
         end)

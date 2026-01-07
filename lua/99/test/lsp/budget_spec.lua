@@ -140,7 +140,9 @@ describe("Budget", function()
             eq(100, stats.max_tokens)
             eq(100, stats.sections["symbols"])
             eq(50, stats.sections["imports"])
-            assert.is_true(stats.utilization > 0.37 and stats.utilization < 0.38)
+            assert.is_true(
+                stats.utilization > 0.37 and stats.utilization < 0.38
+            )
         end)
     end)
 
@@ -187,7 +189,8 @@ describe("Budget", function()
         it("should return empty if no budget remaining", function()
             local budget = Budget.new(5, 1)
             budget:consume("first", "hello")
-            local consumed, truncated = budget:consume_partial("second", "world")
+            local consumed, truncated =
+                budget:consume_partial("second", "world")
             eq("", consumed)
             assert.is_true(truncated)
         end)

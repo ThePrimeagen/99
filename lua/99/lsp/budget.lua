@@ -60,7 +60,8 @@ function Budget:consume(section_name, text)
     end
 
     self.used_chars = self.used_chars + char_count
-    self.sections[section_name] = (self.sections[section_name] or 0) + char_count
+    self.sections[section_name] = (self.sections[section_name] or 0)
+        + char_count
     return true
 end
 
@@ -77,7 +78,7 @@ function Budget:remaining_tokens()
 end
 
 --- Get budget usage statistics
---- @return { used_chars: number, max_chars: number, remaining_chars: number, used_tokens: number, max_tokens: number, remaining_tokens: number, sections: table<string, number>, utilization: number }
+--- @return table Stats with used_chars, max_chars, remaining_chars, tokens, sections, utilization
 function Budget:stats()
     local max_tokens = math.floor(self.max_chars / self.chars_per_token)
     local used_tokens = self:estimate_tokens(string.rep("x", self.used_chars))
@@ -91,8 +92,7 @@ function Budget:stats()
         max_tokens = max_tokens,
         remaining_tokens = self:remaining_tokens(),
         sections = vim.tbl_extend("force", {}, self.sections),
-        utilization = self.max_chars > 0
-                and (self.used_chars / self.max_chars)
+        utilization = self.max_chars > 0 and (self.used_chars / self.max_chars)
             or 0,
     }
 end

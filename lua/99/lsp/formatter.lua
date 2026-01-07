@@ -148,7 +148,8 @@ function M.format_symbol_with_children(symbol, indent_level)
     if symbol.children and #symbol.children > 0 then
         for _, child in ipairs(symbol.children) do
             if M.is_block_kind(child.kind) then
-                local child_lines = M.format_symbol_with_children(child, indent_level + 1)
+                local child_lines =
+                    M.format_symbol_with_children(child, indent_level + 1)
                 for _, line in ipairs(child_lines) do
                     table.insert(lines, line)
                 end
@@ -233,7 +234,8 @@ local SEVERITY_NAMES = {
 --- @return string Formatted diagnostic line
 function M.format_diagnostic(diag)
     local severity = SEVERITY_NAMES[diag.severity] or "UNKNOWN"
-    local location = string.format("%d:%d", (diag.lnum or 0) + 1, (diag.col or 0) + 1)
+    local location =
+        string.format("%d:%d", (diag.lnum or 0) + 1, (diag.col or 0) + 1)
 
     local parts = { severity, location, diag.message or "" }
 
@@ -287,7 +289,13 @@ function M.format_external_types(types)
     for pkg, pkg_types in pairs(by_package) do
         table.insert(lines, "  " .. pkg .. ":")
         for _, ext_type in ipairs(pkg_types) do
-            table.insert(lines, "    " .. ext_type.symbol_name .. ": " .. ext_type.type_signature)
+            table.insert(
+                lines,
+                "    "
+                    .. ext_type.symbol_name
+                    .. ": "
+                    .. ext_type.type_signature
+            )
         end
     end
 

@@ -40,11 +40,8 @@ describe("diagnostics", function()
                 { lnum = 15, col = 0, message = "out of range" },
                 { lnum = 10, col = 5, message = "also in range" },
             }
-            local range = geo.Range:new(
-                0,
-                geo.Point:new(5, 1),
-                geo.Point:new(12, 100)
-            )
+            local range =
+                geo.Range:new(0, geo.Point:new(5, 1), geo.Point:new(12, 100))
             local filtered = diagnostics.filter_by_range(diags_list, range)
             eq(2, #filtered)
             eq("in range", filtered[1].message)

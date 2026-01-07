@@ -6,7 +6,10 @@ describe("signature_help", function()
     describe("format_signature", function()
         it("should return the signature label", function()
             local sig = { label = "foo(a: number, b: string): void" }
-            eq("foo(a: number, b: string): void", signature_help.format_signature(sig))
+            eq(
+                "foo(a: number, b: string): void",
+                signature_help.format_signature(sig)
+            )
         end)
     end)
 

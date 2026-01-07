@@ -170,12 +170,16 @@ function Cache:schedule_invalidation(uri)
     end
 
     local timer = vim.uv.new_timer()
-    timer:start(self.debounce_ms, 0, vim.schedule_wrap(function()
-        timer:stop()
-        timer:close()
-        self:invalidate(uri)
-        self.debounce_timers[uri] = nil
-    end))
+    timer:start(
+        self.debounce_ms,
+        0,
+        vim.schedule_wrap(function()
+            timer:stop()
+            timer:close()
+            self:invalidate(uri)
+            self.debounce_timers[uri] = nil
+        end)
+    )
 
     self.debounce_timers[uri] = timer
 end
