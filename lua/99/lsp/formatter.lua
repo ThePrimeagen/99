@@ -119,11 +119,8 @@ function M.format_symbol(symbol, indent_level)
     indent_level = indent_level or 0
     local prefix = indent(indent_level)
     local keyword = M.kind_to_keyword(symbol.kind)
-
-    -- Use signature if available, otherwise just the name
     local display = symbol.signature or symbol.name
 
-    -- Add keyword prefix if present
     if keyword ~= "" then
         display = keyword .. " " .. display
     end
@@ -220,6 +217,124 @@ function M.format_imports(imports)
     end
 
     return table.concat(lines, "\n")
+end
+
+--- Severity level names for diagnostics
+--- @type table<number, string>
+local SEVERITY_NAMES = {
+    [1] = "ERROR",
+    [2] = "WARN",
+    [3] = "INFO",
+    [4] = "HINT",
+}
+
+--- Format a single diagnostic
+--- @param diag _99.Lsp.Diagnostic
+--- @return string Formatted diagnostic line
+function M.format_diagnostic(diag)
+    local severity = SEVERITY_NAMES[diag.severity] or "UNKNOWN"
+    local location = string.format("%d:%d", (diag.lnum or 0) + 1, (diag.col or 0) + 1)
+
+    local parts = { severity, location, diag.message or "" }
+
+    if diag.source then
+        table.insert(parts, 1, "[" .. diag.source .. "]")
+    end
+
+    if diag.code then
+        table.insert(parts, "(" .. tostring(diag.code) .. ")")
+    end
+
+    return table.concat(parts, " ")
+end
+
+--- Format multiple diagnostics for context
+--- @param diagnostics _99.Lsp.Diagnostic[] Diagnostics to format
+--- @return string Formatted diagnostics string
+function M.format_diagnostics(diagnostics)
+    if not diagnostics or #diagnostics == 0 then
+        return ""
+    end
+
+    local lines = { "", "Diagnostics:" }
+
+    for _, diag in ipairs(diagnostics) do
+        table.insert(lines, "  " .. M.format_diagnostic(diag))
+    end
+
+    return table.concat(lines, "\n")
+end
+
+--- Format external types for context
+--- @param types _99.Lsp.ExternalType[] External types to format
+--- @return string Formatted external types string
+function M.format_external_types(types)
+    if not types or #types == 0 then
+        return ""
+    end
+
+    local by_package = {}
+    for _, ext_type in ipairs(types) do
+        local pkg = ext_type.package_name or "unknown"
+        if not by_package[pkg] then
+            by_package[pkg] = {}
+        end
+        table.insert(by_package[pkg], ext_type)
+    end
+
+    local lines = { "", "External Types:" }
+
+    for pkg, pkg_types in pairs(by_package) do
+        table.insert(lines, "  " .. pkg .. ":")
+        for _, ext_type in ipairs(pkg_types) do
+            table.insert(lines, "    " .. ext_type.symbol_name .. ": " .. ext_type.type_signature)
+        end
+    end
+
+    return table.concat(lines, "\n")
+end
+
+--- Format signature help for context
+--- @param sig_help _99.Lsp.SignatureHelp Signature help to format
+--- @return string Formatted signature help string
+function M.format_signature_help(sig_help)
+    if not sig_help or not sig_help.signatures or #sig_help.signatures == 0 then
+        return ""
+    end
+
+    local lines = { "", "Signature:" }
+
+    for _, sig in ipairs(sig_help.signatures) do
+        table.insert(lines, "  " .. sig.label)
+        if sig.documentation and sig.documentation ~= "" then
+            table.insert(lines, "    " .. sig.documentation)
+        end
+    end
+
+    return table.concat(lines, "\n")
+end
+
+--- Format content with budget constraint
+--- @param content string Content to format
+--- @param budget _99.Lsp.Budget Budget to check against
+--- @return string Formatted content (potentially truncated)
+--- @return boolean truncated Whether content was truncated
+function M.format_with_budget(content, budget)
+    if not content or content == "" then
+        return "", false
+    end
+
+    if budget:can_fit(content) then
+        return content, false
+    end
+
+    local remaining = budget:remaining()
+    if remaining <= 0 then
+        return "", true
+    end
+
+    local truncated = content:sub(1, remaining - 3) .. "..."
+    return truncated, true
 end
 
 return M
