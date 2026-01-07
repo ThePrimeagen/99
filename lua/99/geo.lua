@@ -109,6 +109,23 @@ function Point:to_lsp()
     return self.row - 1, self.col - 1
 end
 
+--- Convert to LSP Position object format
+--- @return { line: number, character: number }
+function Point:to_lsp_position()
+    return { line = self.row - 1, character = self.col - 1 }
+end
+
+--- Create Point from LSP position (0-based line, character)
+--- @param line number 0-based line from LSP
+--- @param character number 0-based character from LSP
+--- @return _99.Point
+function Point:from_lsp_position(line, character)
+    return setmetatable({
+        row = line + 1,
+        col = character + 1,
+    }, self)
+end
+
 --- vim.api.nvim_buf_get_text uses 0 based row and col
 --- @return number, number
 function Point:to_vim()
@@ -249,6 +266,18 @@ function Range.from_marks(start, end_)
     local start_point = Point.from_mark(start)
     local end_point = Point.from_mark(end_)
     return Range:new(start.buffer, start_point, end_point)
+end
+
+--- Create Range from LSP range object (0-based positions)
+--- @param buffer number
+--- @param lsp_range { start: { line: number, character: number }, ["end"]: { line: number, character: number } }
+--- @return _99.Range
+function Range:from_lsp_range(buffer, lsp_range)
+    return Range:new(
+        buffer,
+        Point:from_lsp_position(lsp_range.start.line, lsp_range.start.character),
+        Point:from_lsp_position(lsp_range["end"].line, lsp_range["end"].character)
+    )
 end
 
 --- @param replace_with string[]
