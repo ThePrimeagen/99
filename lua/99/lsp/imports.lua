@@ -41,17 +41,19 @@ function M.extract_imports_from_buffer(bufnr)
     local filetype = vim.bo[bufnr].filetype
 
     for line_num, line in ipairs(lines) do
-        local import = nil
+        local import
 
         if filetype == "lua" then
             local module = line:match('require%s*%(?%s*["\']([^"\']+)["\']')
             if module then
                 local var_name = line:match("^%s*local%s+([%w_]+)%s*=") or module:match("([^%.]+)$")
-                import = {
-                    module_path = module,
-                    symbols = { var_name },
-                    position = { line = line_num - 1, character = line:find("require") - 1 or 0 },
-                }
+                if var_name then
+                    import = {
+                        module_path = module,
+                        symbols = { var_name },
+                        position = { line = line_num - 1, character = line:find("require") - 1 or 0 },
+                    }
+                end
             end
         elseif filetype == "typescript" or filetype == "typescriptreact" or filetype == "javascript" or filetype == "javascriptreact" then
             local named, module = line:match('import%s*{([^}]+)}%s*from%s*["\']([^"\']+)["\']')
@@ -121,9 +123,6 @@ function M.extract_imports_from_buffer(bufnr)
         end
 
         if import then
-            import.resolved_uri = nil
-            import.resolved_symbols = nil
-            import.is_external = nil
             table.insert(imports, import)
         end
     end

@@ -97,8 +97,6 @@ end
 --- @param bufnr number Buffer number
 --- @return string?
 local function get_node_name(node, bufnr)
-    local node_type = node:type()
-
     local name_node = node:field("name")[1]
     if name_node then
         return vim.treesitter.get_node_text(name_node, bufnr)
@@ -185,11 +183,13 @@ function M.get_symbols(bufnr)
         type_set[t] = true
     end
 
+    local seen = {}
     for child in root:iter_children() do
         local child_type = child:type()
         if type_set[child_type] then
             local symbol = node_to_symbol(child, bufnr)
-            if symbol then
+            if symbol and not seen[symbol.name] then
+                seen[symbol.name] = true
                 table.insert(symbols, symbol)
             end
         end
@@ -198,7 +198,8 @@ function M.get_symbols(bufnr)
             local gc_type = grandchild:type()
             if type_set[gc_type] then
                 local symbol = node_to_symbol(grandchild, bufnr)
-                if symbol then
+                if symbol and not seen[symbol.name] then
+                    seen[symbol.name] = true
                     table.insert(symbols, symbol)
                 end
             end

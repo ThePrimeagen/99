@@ -68,9 +68,8 @@ function Cache:invalidate(uri)
     self.entries[uri] = nil
     local timer = self.debounce_timers[uri]
     if timer then
-        if type(timer.stop) == "function" then
-            timer:stop()
-        end
+        timer:stop()
+        timer:close()
         self.debounce_timers[uri] = nil
     end
 end
@@ -78,10 +77,9 @@ end
 --- Clear all cache entries
 function Cache:clear()
     self.entries = {}
-    for uri, timer in pairs(self.debounce_timers) do
-        if type(timer.stop) == "function" then
-            timer:stop()
-        end
+    for _, timer in pairs(self.debounce_timers) do
+        timer:stop()
+        timer:close()
     end
     self.debounce_timers = {}
 end
@@ -100,8 +98,8 @@ end
 --- @return { count: number, oldest: number?, newest: number? }
 function Cache:stats()
     local count = 0
-    local oldest = nil
-    local newest = nil
+    local oldest
+    local newest
 
     for _, entry in pairs(self.entries) do
         count = count + 1
@@ -125,15 +123,17 @@ end
 function Cache:schedule_invalidation(uri)
     local existing = self.debounce_timers[uri]
     if existing then
-        if type(existing.stop) == "function" then
-            existing:stop()
-        end
+        existing:stop()
+        existing:close()
     end
 
-    local timer = vim.defer_fn(function()
+    local timer = vim.uv.new_timer()
+    timer:start(self.debounce_ms, 0, vim.schedule_wrap(function()
+        timer:stop()
+        timer:close()
         self:invalidate(uri)
         self.debounce_timers[uri] = nil
-    end, self.debounce_ms)
+    end))
 
     self.debounce_timers[uri] = timer
 end
@@ -189,9 +189,8 @@ function Cache:teardown()
 
     -- Clear all timers
     for _, timer in pairs(self.debounce_timers) do
-        if type(timer.stop) == "function" then
-            timer:stop()
-        end
+        timer:stop()
+        timer:close()
     end
     self.debounce_timers = {}
 end

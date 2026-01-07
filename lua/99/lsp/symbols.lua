@@ -1,5 +1,3 @@
-local formatter = require("99.lsp.formatter")
-
 local M = {}
 
 --- @class _99.Lsp.Symbol
@@ -113,7 +111,7 @@ function M.get_document_symbols(bufnr, callback)
         bufnr,
         "textDocument/documentSymbol",
         params,
-        function(err, result, ctx, _)
+        function(err, result, _, _)
             if err then
                 callback(nil, vim.inspect(err))
                 return
@@ -138,7 +136,7 @@ end
 function M.filter_symbols(symbols, include_kinds, exclude_kinds)
     local result = {}
 
-    local include_set = nil
+    local include_set
     if include_kinds and #include_kinds > 0 then
         include_set = {}
         for _, kind in ipairs(include_kinds) do

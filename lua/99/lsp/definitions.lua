@@ -78,7 +78,7 @@ function M.get_definition(bufnr, position, callback)
         return
     end
 
-    if not client.server_capabilities.definitionProvider then
+    if not client.server_capabilities or not client.server_capabilities.definitionProvider then
         callback(nil, "definition_not_supported")
         return
     end
@@ -88,7 +88,7 @@ function M.get_definition(bufnr, position, callback)
         position = position,
     }
 
-    vim.lsp.buf_request(bufnr, "textDocument/definition", params, function(err, result, ctx, _)
+    vim.lsp.buf_request(bufnr, "textDocument/definition", params, function(err, result, _, _)
         if err then
             callback(nil, vim.inspect(err))
             return
