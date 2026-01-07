@@ -159,33 +159,31 @@ end
 --- @param bufnr number Buffer number
 --- @param positions { line: number, character: number }[] LSP positions (0-based)
 --- @param callback fun(results: (_99.Lsp.SignatureHelp?)[])
+--- @return _99.Lsp.ParallelController? controller Control object for cancellation
 function M.batch_signature_help(bufnr, positions, callback)
-    if not positions or #positions == 0 then
-        callback({})
-        return
-    end
+    local parallel = require("99.lsp.parallel")
 
-    local results = {}
-    local pending = #positions
-    local completed = false
-
-    local function check_done()
-        if completed then
-            return
-        end
-        pending = pending - 1
-        if pending == 0 then
-            completed = true
-            callback(results)
-        end
-    end
-
-    for i, position in ipairs(positions) do
-        M.get_signature_help(bufnr, position, function(result, _)
-            results[i] = result
-            check_done()
+    return parallel.parallel_map(positions, function(position, _, done)
+        M.get_signature_help(bufnr, position, function(result, err)
+            done(result, err)
         end)
-    end
+    end, callback)
+end
+
+--- Batch request signature help with timeout
+--- @param bufnr number Buffer number
+--- @param positions { line: number, character: number }[] LSP positions (0-based)
+--- @param timeout_ms number Timeout in milliseconds
+--- @param callback fun(results: (_99.Lsp.SignatureHelp?)[], timed_out: boolean)
+--- @return _99.Lsp.ParallelController? controller
+function M.batch_signature_help_with_timeout(bufnr, positions, timeout_ms, callback)
+    local parallel = require("99.lsp.parallel")
+
+    return parallel.parallel_map_with_timeout(positions, function(position, _, done)
+        M.get_signature_help(bufnr, position, function(result, err)
+            done(result, err)
+        end)
+    end, timeout_ms, callback)
 end
 
 --- Format signature help for context output

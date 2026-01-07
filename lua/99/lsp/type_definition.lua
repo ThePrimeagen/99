@@ -122,33 +122,31 @@ end
 --- @param bufnr number Buffer number
 --- @param positions { line: number, character: number }[] LSP positions (0-based)
 --- @param callback fun(results: _99.Lsp.TypeDefinition[][])
+--- @return _99.Lsp.ParallelController? controller Control object for cancellation
 function M.batch_type_definitions(bufnr, positions, callback)
-    if not positions or #positions == 0 then
-        callback({})
-        return
-    end
+    local parallel = require("99.lsp.parallel")
 
-    local results = {}
-    local pending = #positions
-    local completed = false
-
-    local function check_done()
-        if completed then
-            return
-        end
-        pending = pending - 1
-        if pending == 0 then
-            completed = true
-            callback(results)
-        end
-    end
-
-    for i, position in ipairs(positions) do
-        M.get_type_definition(bufnr, position, function(defs, _)
-            results[i] = defs
-            check_done()
+    return parallel.parallel_map(positions, function(position, _, done)
+        M.get_type_definition(bufnr, position, function(defs, err)
+            done(defs, err)
         end)
-    end
+    end, callback)
+end
+
+--- Batch request type definitions with timeout
+--- @param bufnr number Buffer number
+--- @param positions { line: number, character: number }[] LSP positions (0-based)
+--- @param timeout_ms number Timeout in milliseconds
+--- @param callback fun(results: _99.Lsp.TypeDefinition[][], timed_out: boolean)
+--- @return _99.Lsp.ParallelController? controller
+function M.batch_type_definitions_with_timeout(bufnr, positions, timeout_ms, callback)
+    local parallel = require("99.lsp.parallel")
+
+    return parallel.parallel_map_with_timeout(positions, function(position, _, done)
+        M.get_type_definition(bufnr, position, function(defs, err)
+            done(defs, err)
+        end)
+    end, timeout_ms, callback)
 end
 
 --- Check if type definition points to an external package

@@ -227,33 +227,31 @@ end
 --- @param bufnr number Buffer number
 --- @param positions { line: number, character: number }[] Array of positions
 --- @param callback fun(results: table<number, _99.Lsp.HoverResult?>) Callback with index -> result map
+--- @return _99.Lsp.ParallelController? controller Control object for cancellation
 function M.batch_hover(bufnr, positions, callback)
-    if not positions or #positions == 0 then
-        callback({})
-        return
-    end
+    local parallel = require("99.lsp.parallel")
 
-    local results = {}
-    local pending = #positions
-    local completed = false
-
-    local function check_done()
-        if completed then
-            return
-        end
-        pending = pending - 1
-        if pending == 0 then
-            completed = true
-            callback(results)
-        end
-    end
-
-    for i, position in ipairs(positions) do
-        M.get_hover(bufnr, position, function(result, _)
-            results[i] = result
-            check_done()
+    return parallel.parallel_map(positions, function(position, _, done)
+        M.get_hover(bufnr, position, function(result, err)
+            done(result, err)
         end)
-    end
+    end, callback)
+end
+
+--- Batch hover requests with timeout
+--- @param bufnr number Buffer number
+--- @param positions { line: number, character: number }[] Array of positions
+--- @param timeout_ms number Timeout in milliseconds
+--- @param callback fun(results: table<number, _99.Lsp.HoverResult?>, timed_out: boolean)
+--- @return _99.Lsp.ParallelController? controller
+function M.batch_hover_with_timeout(bufnr, positions, timeout_ms, callback)
+    local parallel = require("99.lsp.parallel")
+
+    return parallel.parallel_map_with_timeout(positions, function(position, _, done)
+        M.get_hover(bufnr, position, function(result, err)
+            done(result, err)
+        end)
+    end, timeout_ms, callback)
 end
 
 --- Enrich a symbol with hover information
