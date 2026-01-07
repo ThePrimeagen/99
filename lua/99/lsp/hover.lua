@@ -93,6 +93,93 @@ function M.extract_type_signature(hover_text)
     return first_line or clean
 end
 
+--- Extract minimal type info, stripping implementation details
+--- Use this when you want just the type, not the full signature
+--- @param hover_text string Raw hover text
+--- @return string Minimal type
+function M.extract_minimal_type(hover_text)
+    if not hover_text or hover_text == "" then
+        return ""
+    end
+
+    local clean = strip_markdown_fences(hover_text)
+
+    local func_sig = clean:match("^(function[^\n]+)")
+        or clean:match("^(local function[^\n]+)")
+    if func_sig then
+        func_sig = func_sig:gsub("%s*%-%-.*$", "")
+        return func_sig
+    end
+
+    local ts_type = clean:match("^[%w_]+:%s*([^\n=]+)")
+    if ts_type then
+        return ts_type:gsub("%s+$", "")
+    end
+
+    local class_decl = clean:match("^(class%s+[%w_]+[^\n{]*)")
+        or clean:match("^(interface%s+[%w_]+[^\n{]*)")
+    if class_decl then
+        return class_decl
+    end
+
+    local type_alias = clean:match("^(type%s+[%w_]+%s*=%s*[^\n]+)")
+    if type_alias then
+        return type_alias
+    end
+
+    local first_line = clean:match("^([^\n]+)")
+    if first_line and #first_line > 100 then
+        return first_line:sub(1, 97) .. "..."
+    end
+    return first_line or ""
+end
+
+--- Extract type for external package context
+--- Provides a compact type representation suitable for AI context
+--- @param hover_text string Raw hover text
+--- @return string Type for external context
+function M.extract_type_for_external(hover_text)
+    if not hover_text or hover_text == "" then
+        return ""
+    end
+
+    local clean = strip_markdown_fences(hover_text)
+
+    local params, ret = clean:match("function%s*[%w_%.%:]*%((.-)%)%s*:%s*([^%s\n]+)")
+    if params and ret then
+        params = params:gsub("%s*=%s*[^,)]+", "")
+        return string.format("(%s) => %s", params, ret)
+    end
+
+    local params_only = clean:match("function%s*[%w_%.%:]*%((.-)%)")
+    if params_only then
+        params_only = params_only:gsub("%s*=%s*[^,)]+", "")
+        return string.format("(%s) => void", params_only)
+    end
+
+    local ts_arrow = clean:match("%((.-)%)%s*=>%s*([^\n]+)")
+    if ts_arrow then
+        return clean:match("%(.-%)%s*=>%s*[^\n]+")
+    end
+
+    local simple_type = clean:match(":%s*([^\n=]+)")
+    if simple_type then
+        return simple_type:gsub("%s+$", "")
+    end
+
+    if clean:match("^class%s") then
+        local class_name = clean:match("^class%s+([%w_]+)")
+        return class_name and ("class " .. class_name) or "class"
+    end
+
+    if clean:match("^interface%s") then
+        local iface_name = clean:match("^interface%s+([%w_]+)")
+        return iface_name and ("interface " .. iface_name) or "interface"
+    end
+
+    return M.extract_minimal_type(hover_text)
+end
+
 --- Make a textDocument/hover request for a specific position
 --- @param bufnr number Buffer number
 --- @param position { line: number, character: number } LSP position (0-based)

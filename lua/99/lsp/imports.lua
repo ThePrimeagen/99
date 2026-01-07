@@ -214,9 +214,7 @@ end
 --- @param resolve boolean Whether to resolve imports to target files
 --- @param callback fun(imports: _99.Lsp.Import[]) Callback with imports
 function M.get_imports(bufnr, resolve, callback)
-    -- First try to get imports from buffer parsing (more reliable)
     local imports = M.extract_imports_from_buffer(bufnr)
-
     if not resolve then
         callback(imports)
         return
@@ -245,6 +243,75 @@ end
 --- @param uri string
 function M.mark_visited(uri)
     visited_uris[uri] = true
+end
+
+--- Check if a path/URI points to an external package
+--- @param uri string File URI or path
+--- @return boolean
+function M.is_external_path(uri)
+    local file_path = uri
+    if uri:match("^file://") then
+        file_path = vim.uri_to_fname(uri)
+    end
+
+    local cwd = vim.fn.getcwd()
+    if file_path:sub(1, #cwd) == cwd then
+        return false
+    end
+
+    local external_patterns = {
+        "/node_modules/",
+        "/.npm/",
+        "/site-packages/",
+        "/.local/lib/",
+        "/usr/lib/",
+        "/usr/local/lib/",
+        "/.cargo/",
+        "/go/pkg/",
+        "/.rustup/",
+        "/.pyenv/",
+        "/.nvm/",
+        "/vendor/",
+        "/.luarocks/",
+    }
+
+    for _, pattern in ipairs(external_patterns) do
+        if file_path:find(pattern, 1, true) then
+            return true
+        end
+    end
+
+    return false
+end
+
+--- Get only external imports from a buffer
+--- @param bufnr number Buffer number
+--- @param callback fun(imports: _99.Lsp.Import[])
+function M.get_external_imports(bufnr, callback)
+    M.get_imports(bufnr, true, function(imports)
+        local external = {}
+        for _, imp in ipairs(imports or {}) do
+            if imp.is_external and imp.resolved_uri then
+                table.insert(external, imp)
+            end
+        end
+        callback(external)
+    end)
+end
+
+--- Get only local (non-external) imports from a buffer
+--- @param bufnr number Buffer number
+--- @param callback fun(imports: _99.Lsp.Import[])
+function M.get_local_imports(bufnr, callback)
+    M.get_imports(bufnr, true, function(imports)
+        local local_imports = {}
+        for _, imp in ipairs(imports or {}) do
+            if not imp.is_external and imp.resolved_uri then
+                table.insert(local_imports, imp)
+            end
+        end
+        callback(local_imports)
+    end)
 end
 
 return M
