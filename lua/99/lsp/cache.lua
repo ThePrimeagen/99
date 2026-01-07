@@ -3,6 +3,8 @@
 --- @field imports _99.Lsp.Import[]? Cached imports
 --- @field timestamp number Cache entry creation time (vim.uv.now())
 --- @field uri string File URI this entry is for
+--- @field ttl number? TTL in milliseconds (nil = session lifetime)
+--- @field char_estimate number? Estimated character count for budget
 
 --- @class _99.Lsp.Cache
 --- @field entries table<string, _99.Lsp.CacheEntry> URI -> cache entry
@@ -116,6 +118,46 @@ function Cache:stats()
         oldest = oldest,
         newest = newest,
     }
+end
+
+--- Check if a cache entry has expired based on TTL
+--- @param uri string File URI
+--- @return boolean True if expired or not found
+function Cache:is_expired(uri)
+    local entry = self.entries[uri]
+    if not entry then
+        return true
+    end
+    if not entry.ttl then
+        return false
+    end
+    return (vim.uv.now() - entry.timestamp) > entry.ttl
+end
+
+--- Set a cache entry with explicit TTL
+--- @param uri string File URI
+--- @param data { symbols: _99.Lsp.Symbol[]?, imports: _99.Lsp.Import[]?, char_estimate: number? } Cache data
+--- @param ttl number? TTL in milliseconds (nil = session lifetime)
+function Cache:set_with_ttl(uri, data, ttl)
+    self:set(uri, {
+        symbols = data.symbols,
+        imports = data.imports,
+        timestamp = vim.uv.now(),
+        uri = uri,
+        ttl = ttl,
+        char_estimate = data.char_estimate,
+    })
+end
+
+--- Get a cache entry only if valid (not expired)
+--- @param uri string File URI
+--- @return _99.Lsp.CacheEntry? Entry if valid, nil if expired or not found
+function Cache:get_if_valid(uri)
+    if self:is_expired(uri) then
+        self:invalidate(uri)
+        return nil
+    end
+    return self:get(uri)
 end
 
 --- Schedule debounced invalidation for a URI

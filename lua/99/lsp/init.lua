@@ -5,6 +5,12 @@
 --- @field timeout number LSP request timeout in milliseconds
 --- @field max_symbols number Maximum symbols per file
 --- @field include_private boolean Include private/internal symbols
+--- @field max_context_tokens number Maximum tokens for context budget (default 8000)
+--- @field chars_per_token number Characters per token estimate (default 4)
+--- @field include_diagnostics boolean Include buffer diagnostics in context (default true)
+--- @field include_external_types boolean Include external package type signatures (default true)
+--- @field external_type_ttl number TTL for external type cache in ms (default 3600000 = 1hr)
+--- @field relevance_filter boolean Only include imports with symbols used in current range (default true)
 
 --- @class _99.Lsp
 --- @field config _99.Lsp.Config
@@ -21,6 +27,12 @@ function M.default_config()
         timeout = 5000,
         max_symbols = 100,
         include_private = false,
+        max_context_tokens = 8000,
+        chars_per_token = 4,
+        include_diagnostics = true,
+        include_external_types = true,
+        external_type_ttl = 3600000,
+        relevance_filter = true,
     }
 end
 
@@ -49,7 +61,6 @@ function M.is_available(bufnr)
         return false
     end
 
-    -- Check if any client supports documentSymbol
     for _, client in ipairs(clients) do
         if client.server_capabilities and client.server_capabilities.documentSymbolProvider then
             return true
