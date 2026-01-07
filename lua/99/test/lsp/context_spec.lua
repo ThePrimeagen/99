@@ -58,8 +58,10 @@ describe("context", function()
 
             assert.is_nil(test_err)
             assert.is_not_nil(test_result)
-            assert.is_true(test_result:find("File: /test/file.lua") ~= nil)
-            assert.is_true(test_result:find("testFn") ~= nil)
+            assert.is_true(
+                test_result:find("=== File: /test/file.lua ===") ~= nil
+            )
+            assert.is_true(test_result:find("fn %(a: number%): string") ~= nil)
             assert.is_true(test_stats.budget_used > 0)
         end)
 
@@ -308,13 +310,14 @@ describe("formatter integration", function()
         end)
 
         it("should truncate content when over budget", function()
-            local budget = Budget.new(5, 1)
+            local budget = Budget.new(20, 1)
             budget:consume("test", "fill")
             local content = "This is a very long content string"
             local result, truncated =
                 formatter.format_with_budget(content, budget)
             assert.is_true(truncated)
             assert.is_true(#result < #content)
+            assert.is_true(#result <= 16)
             assert.is_true(result:find("%.%.%.$") ~= nil)
         end)
 

@@ -47,7 +47,7 @@ end
 --- @param entry _99.Lsp.CacheEntry
 function Cache:set(uri, entry)
     entry.uri = uri
-    entry.timestamp = vim.uv.now()
+    entry.timestamp = entry.timestamp or vim.uv.now()
     self.entries[uri] = entry
 end
 

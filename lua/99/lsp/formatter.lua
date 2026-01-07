@@ -337,11 +337,12 @@ function M.format_with_budget(content, budget)
     end
 
     local remaining = budget:remaining()
-    if remaining <= 0 then
+    if remaining <= 3 then
         return "", true
     end
 
-    local truncated = content:sub(1, remaining - 3) .. "..."
+    local max_content_len = remaining - 3
+    local truncated = content:sub(1, max_content_len) .. "..."
     return truncated, true
 end
 

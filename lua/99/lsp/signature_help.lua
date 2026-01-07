@@ -109,8 +109,8 @@ function M.format_active_parameter(sig_help)
         return nil
     end
 
-    local active_param_idx = sig_help.activeParameter
-        or sig.activeParameter
+    local active_param_idx = sig.activeParameter
+        or sig_help.activeParameter
         or 0
     local param = sig.parameters[active_param_idx + 1]
     if not param then

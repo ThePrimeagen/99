@@ -188,8 +188,11 @@ function M.batch_lsp_request_with_timeout(
 end
 
 --- Cancel multiple controllers at once
---- @param controllers _99.Lsp.ParallelController[] Controllers to cancel
+--- @param controllers _99.Lsp.ParallelController[]? Controllers to cancel
 function M.cancel_all(controllers)
+    if not controllers then
+        return
+    end
     for _, controller in ipairs(controllers) do
         if controller and controller.cancel then
             controller.cancel()

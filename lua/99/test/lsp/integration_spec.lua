@@ -21,9 +21,9 @@ describe("LSP module integration", function()
         end)
 
         it("should load lsp/cache.lua", function()
-            local cache = require("99.lsp.cache")
-            assert.is_not_nil(cache)
-            assert.is_not_nil(cache.Cache)
+            local Cache = require("99.lsp.cache")
+            assert.is_not_nil(Cache)
+            assert.is_function(Cache.new)
         end)
 
         it("should load lsp/context.lua", function()
@@ -235,23 +235,32 @@ describe("LSP module integration", function()
     end)
 
     describe("parallel utilities integration", function()
-        it("should work with collect_results pattern", function(done)
+        it("should work with collect_results pattern", function()
             local parallel = require("99.lsp.parallel")
 
+            local called = false
+            local collected_results
             local add_result, is_done = parallel.create_collector(
                 3,
                 function(results)
-                    eq("a", results[1])
-                    eq("b", results[2])
-                    eq("c", results[3])
-                    assert.is_true(is_done())
-                    done()
+                    called = true
+                    collected_results = results
                 end
             )
 
             add_result(1, "a", nil)
             add_result(2, "b", nil)
             add_result(3, "c", nil)
+
+            vim.wait(100, function()
+                return called
+            end)
+
+            assert.is_true(called)
+            eq("a", collected_results[1])
+            eq("b", collected_results[2])
+            eq("c", collected_results[3])
+            assert.is_true(is_done())
         end)
     end)
 
