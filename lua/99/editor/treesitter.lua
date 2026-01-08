@@ -149,14 +149,20 @@ function M.containing_function(context, cursor)
 
     local root = tree_root(buffer, lang)
     if not root then
-        logger:debug("LSP: could not find tree root")
+        logger:debug(
+            "TreeSitter: could not find tree root - is treesitter parser installed?",
+            "lang",
+            lang
+        )
         return nil
     end
 
     local ok, query = pcall(vim.treesitter.query.get, lang, function_query)
     if not ok or query == nil then
         logger:debug(
-            "LSP: not ok or query",
+            "treesitter: query not found - does queries/"
+                .. lang
+                .. "/99-function.scm exist?",
             "query",
             vim.inspect(query),
             "lang",
@@ -188,7 +194,11 @@ function M.containing_function(context, cursor)
     logger:debug(
         "treesitter#containing_function",
         "found_range",
-        found_range and found_range:to_string() or "found_range is nil"
+        found_range and found_range:to_string() or "nil",
+        "lang",
+        lang,
+        "cursor",
+        cursor.row .. ":" .. cursor.col
     )
 
     if not found_range then

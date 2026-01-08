@@ -47,7 +47,11 @@ local function fill_in_function(context, additional_prompt)
     local func = ts.containing_function(context, cursor)
 
     if not func then
-        logger:fatal("fill_in_function: unable to find any containing function")
+        logger:error("fill_in_function: unable to find any containing function")
+        vim.notify(
+            "99: Place your cursor inside a function to fill it in",
+            vim.log.levels.WARN
+        )
         return
     end
 

@@ -131,9 +131,9 @@ function _99.info()
     local lsp_status = "disabled"
     if _99_state.lsp_config and _99_state.lsp_config.enabled then
         lsp_status = string.format(
-            "enabled (depth: %d, timeout: %dms)",
-            _99_state.lsp_config.import_depth,
-            _99_state.lsp_config.timeout
+            "enabled (max_symbols: %d, timeout: %dms)",
+            _99_state.lsp_config.max_symbols or 100,
+            _99_state.lsp_config.timeout or 5000
         )
     end
 

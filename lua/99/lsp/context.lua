@@ -14,6 +14,14 @@ local M = {}
 --- @field budget_remaining number Characters remaining
 --- @field capabilities_used string[] Which LSP capabilities were used
 
+--- @class _99.Lsp.Diagnostic
+--- @field severity number Diagnostic severity (1=ERROR, 2=WARN, 3=INFO, 4=HINT)
+--- @field lnum number 0-based line number
+--- @field col number 0-based column number
+--- @field message string Diagnostic message
+--- @field source string? Source of the diagnostic (e.g., "lua_ls")
+--- @field code string|number|nil Diagnostic code
+
 --- Get errors and warnings for context
 --- @param bufnr number Buffer number
 --- @param range _99.Range? Optional range filter
@@ -70,11 +78,33 @@ local function build_context_async(request_context)
 
     -- Require LSP to be available
     if not lsp.is_available(bufnr) then
-        logger:debug("LSP not available", "bufnr", bufnr)
+        logger:debug(
+            "[LSP] NOT AVAILABLE - no LSP client with documentSymbol capability",
+            "bufnr",
+            bufnr
+        )
         return nil, nil, stats
     end
 
-    logger:debug("Building LSP context", "bufnr", bufnr)
+    local clients = vim.lsp.get_clients({ bufnr = bufnr })
+    local client_names = {}
+    for _, client in ipairs(clients) do
+        table.insert(client_names, client.name)
+    end
+    logger:debug(
+        "[LSP] AVAILABLE",
+        "bufnr",
+        bufnr,
+        "clients",
+        table.concat(client_names, ", ")
+    )
+    logger:debug(
+        "[LSP] Building context",
+        "bufnr",
+        bufnr,
+        "file",
+        request_context.full_path
+    )
 
     local caps = requests.get_server_capabilities(bufnr)
 
@@ -195,11 +225,21 @@ local function build_context_async(request_context)
 
     local result = table.concat(parts, "\n")
     logger:debug(
-        "Built LSP context",
-        "length",
-        #result,
+        "[LSP] Context built successfully",
+        "symbols",
+        stats.symbols_included,
+        "diagnostics",
+        stats.diagnostics_included,
+        "inlay_hints",
+        stats.inlay_hints_included,
         "budget_used",
-        stats.budget_used
+        stats.budget_used,
+        "budget_remaining",
+        stats.budget_remaining,
+        "capabilities",
+        table.concat(stats.capabilities_used, ", "),
+        "context_length",
+        #result
     )
 
     return result, nil, stats
