@@ -97,19 +97,6 @@ function Budget:stats()
     }
 end
 
---- Reset the budget to initial state
-function Budget:reset()
-    self.used_chars = 0
-    self.sections = {}
-    self.created_at = time.now()
-end
-
---- Check if budget is exhausted
---- @return boolean True if no budget remaining
-function Budget:is_exhausted()
-    return self.used_chars >= self.max_chars
-end
-
 --- Try to consume text, returning what fits
 --- @param section_name string Section name for tracking
 --- @param text string Text to consume

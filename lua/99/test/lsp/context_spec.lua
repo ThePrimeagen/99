@@ -1,219 +1,6 @@
--- luacheck: globals describe it assert before_each after_each
-local context = require("99.lsp.context")
+-- luacheck: globals describe it assert
 local formatter = require("99.lsp.formatter")
-local Budget = require("99.lsp.budget")
 local eq = assert.are.same
-
-describe("context", function()
-    describe("_format_and_return", function()
-        local request_context
-        local budget
-        local stats
-        local logger
-
-        before_each(function()
-            request_context = {
-                full_path = "/test/file.lua",
-            }
-            budget = Budget.new(1000, 4)
-            stats = {
-                symbols_included = 0,
-                diagnostics_included = 0,
-                imports_included = 0,
-                imports_filtered = 0,
-                external_types_included = 0,
-                budget_used = 0,
-                budget_remaining = 0,
-            }
-            logger = {
-                debug = function() end,
-            }
-        end)
-
-        it("should format symbols context", function()
-            local symbols = {
-                {
-                    name = "testFn",
-                    kind = 12,
-                    signature = "(a: number): string",
-                },
-            }
-
-            local test_result, test_err, test_stats
-            context._format_and_return(
-                request_context,
-                symbols,
-                {},
-                {},
-                {},
-                budget,
-                stats,
-                logger,
-                function(result, err, result_stats)
-                    test_result = result
-                    test_err = err
-                    test_stats = result_stats
-                end
-            )
-
-            assert.is_nil(test_err)
-            assert.is_not_nil(test_result)
-            assert.is_true(
-                test_result:find("=== File: /test/file.lua ===") ~= nil
-            )
-            assert.is_true(test_result:find("fn %(a: number%): string") ~= nil)
-            assert.is_true(test_stats.budget_used > 0)
-        end)
-
-        it("should include diagnostics in output", function()
-            local symbols = {
-                { name = "fn", kind = 12 },
-            }
-            local diagnostics = {
-                { severity = 1, lnum = 5, col = 0, message = "Test error" },
-            }
-
-            local test_result, test_err
-            context._format_and_return(
-                request_context,
-                symbols,
-                {},
-                diagnostics,
-                {},
-                budget,
-                stats,
-                logger,
-                function(result, err, _)
-                    test_result = result
-                    test_err = err
-                end
-            )
-
-            assert.is_nil(test_err)
-            assert.is_true(test_result:find("Diagnostics") ~= nil)
-            assert.is_true(test_result:find("Test error") ~= nil)
-        end)
-
-        it("should include imports in output", function()
-            local symbols = {
-                { name = "fn", kind = 12 },
-            }
-            local imports = {
-                {
-                    module_path = "utils",
-                    resolved_symbols = {
-                        { name = "helper", signature = "(): void" },
-                    },
-                },
-            }
-
-            local test_result, test_err
-            context._format_and_return(
-                request_context,
-                symbols,
-                imports,
-                {},
-                {},
-                budget,
-                stats,
-                logger,
-                function(result, err, _)
-                    test_result = result
-                    test_err = err
-                end
-            )
-
-            assert.is_nil(test_err)
-            assert.is_true(test_result:find("Imports") ~= nil)
-            assert.is_true(test_result:find("utils") ~= nil)
-        end)
-
-        it("should include external types in output", function()
-            local symbols = {
-                { name = "fn", kind = 12 },
-            }
-            local external_types = {
-                {
-                    symbol_name = "ExternalClass",
-                    type_signature = "class ExternalClass",
-                    package_name = "external-pkg",
-                },
-            }
-
-            local test_result, test_err
-            context._format_and_return(
-                request_context,
-                symbols,
-                {},
-                {},
-                external_types,
-                budget,
-                stats,
-                logger,
-                function(result, err, _)
-                    test_result = result
-                    test_err = err
-                end
-            )
-
-            assert.is_nil(test_err)
-            assert.is_true(test_result:find("External Types") ~= nil)
-            assert.is_true(test_result:find("external%-pkg") ~= nil)
-        end)
-
-        it("should track budget usage in stats", function()
-            local symbols = {
-                { name = "fn1", kind = 12 },
-                { name = "fn2", kind = 12 },
-            }
-
-            local test_stats
-            context._format_and_return(
-                request_context,
-                symbols,
-                {},
-                {},
-                {},
-                budget,
-                stats,
-                logger,
-                function(_, _, result_stats)
-                    test_stats = result_stats
-                end
-            )
-
-            assert.is_true(test_stats.budget_used > 0)
-            assert.is_true(test_stats.budget_remaining > 0)
-            eq(test_stats.budget_used + test_stats.budget_remaining, 1000 * 4)
-        end)
-
-        it("should truncate content when budget exceeded", function()
-            local small_budget = Budget.new(10, 1)
-            local symbols = {
-                { name = "veryLongFunctionNameThatExceedsBudget", kind = 12 },
-            }
-
-            local test_result, test_err
-            context._format_and_return(
-                request_context,
-                symbols,
-                {},
-                {},
-                {},
-                small_budget,
-                stats,
-                logger,
-                function(result, err, _)
-                    test_result = result
-                    test_err = err
-                end
-            )
-
-            assert.is_nil(test_err)
-            assert.is_true(#test_result <= 13)
-        end)
-    end)
-end)
 
 describe("formatter integration", function()
     describe("format_diagnostics", function()
@@ -237,111 +24,49 @@ describe("formatter integration", function()
         end)
     end)
 
-    describe("format_external_types", function()
-        it("should format external types grouped by package", function()
-            local types = {
+    describe("format_inlay_hints", function()
+        it("should format inlay hints array", function()
+            local hints = {
                 {
-                    symbol_name = "ClassA",
-                    type_signature = "class",
-                    package_name = "pkg1",
+                    position = { line = 5, character = 10 },
+                    label = ": string",
+                    kind = 1,
                 },
                 {
-                    symbol_name = "ClassB",
-                    type_signature = "class",
-                    package_name = "pkg1",
-                },
-                {
-                    symbol_name = "FuncC",
-                    type_signature = "() => void",
-                    package_name = "pkg2",
+                    position = { line = 10, character = 5 },
+                    label = "name:",
+                    kind = 2,
                 },
             }
-            local result = formatter.format_external_types(types)
-            assert.is_true(result:find("External Types") ~= nil)
-            assert.is_true(result:find("pkg1") ~= nil)
-            assert.is_true(result:find("pkg2") ~= nil)
-            assert.is_true(result:find("ClassA") ~= nil)
-            assert.is_true(result:find("FuncC") ~= nil)
+            local result = formatter.format_inlay_hints(hints)
+            assert.is_true(result:find("Inlay Hints") ~= nil)
+            assert.is_true(result:find("type") ~= nil)
+            assert.is_true(result:find("param") ~= nil)
+            assert.is_true(result:find(": string") ~= nil)
+            assert.is_true(result:find("name:") ~= nil)
+        end)
+
+        it("should handle InlayHintLabelPart array", function()
+            local hints = {
+                {
+                    position = { line = 1, character = 0 },
+                    label = {
+                        { value = "part1" },
+                        { value = "part2" },
+                    },
+                    kind = 1,
+                },
+            }
+            local result = formatter.format_inlay_hints(hints)
+            assert.is_true(result:find("part1part2") ~= nil)
         end)
 
         it("should return empty string for empty array", function()
-            eq("", formatter.format_external_types({}))
+            eq("", formatter.format_inlay_hints({}))
         end)
 
         it("should return empty string for nil", function()
-            eq("", formatter.format_external_types(nil))
-        end)
-    end)
-
-    describe("format_signature_help", function()
-        it("should format signature help", function()
-            local sig_help = {
-                signatures = {
-                    { label = "fn(a: number, b: string): boolean" },
-                    {
-                        label = "fn(a: number): void",
-                        documentation = "Overload docs",
-                    },
-                },
-            }
-            local result = formatter.format_signature_help(sig_help)
-            assert.is_true(result:find("Signature") ~= nil)
-            assert.is_true(result:find("fn%(a: number, b: string%)") ~= nil)
-            assert.is_true(result:find("Overload docs") ~= nil)
-        end)
-
-        it("should return empty for nil", function()
-            eq("", formatter.format_signature_help(nil))
-        end)
-
-        it("should return empty for empty signatures", function()
-            eq("", formatter.format_signature_help({ signatures = {} }))
-        end)
-    end)
-
-    describe("format_with_budget", function()
-        it("should return content unchanged when within budget", function()
-            local budget = Budget.new(1000, 4)
-            local content = "Short content"
-            local result, truncated =
-                formatter.format_with_budget(content, budget)
-            eq(content, result)
-            assert.is_false(truncated)
-        end)
-
-        it("should truncate content when over budget", function()
-            local budget = Budget.new(20, 1)
-            budget:consume("test", "fill")
-            local content = "This is a very long content string"
-            local result, truncated =
-                formatter.format_with_budget(content, budget)
-            assert.is_true(truncated)
-            assert.is_true(#result < #content)
-            assert.is_true(#result <= 16)
-            assert.is_true(result:find("%.%.%.$") ~= nil)
-        end)
-
-        it("should return empty when no budget remaining", function()
-            local budget = Budget.new(5, 1)
-            budget:consume("test", "12345")
-            local result, truncated =
-                formatter.format_with_budget("more content", budget)
-            eq("", result)
-            assert.is_true(truncated)
-        end)
-
-        it("should handle empty content", function()
-            local budget = Budget.new(100, 4)
-            local result, truncated = formatter.format_with_budget("", budget)
-            eq("", result)
-            assert.is_false(truncated)
-        end)
-
-        it("should handle nil content", function()
-            local budget = Budget.new(100, 4)
-            local result, truncated = formatter.format_with_budget(nil, budget)
-            eq("", result)
-            assert.is_false(truncated)
+            eq("", formatter.format_inlay_hints(nil))
         end)
     end)
 end)
@@ -351,18 +76,19 @@ describe("ContextStats tracking", function()
         local stats = {
             symbols_included = 5,
             diagnostics_included = 2,
-            imports_included = 3,
-            imports_filtered = 7,
-            external_types_included = 4,
+            inlay_hints_included = 3,
             budget_used = 1500,
             budget_remaining = 2500,
+            capabilities_used = {
+                "textDocument/documentSymbol",
+                "textDocument/hover",
+            },
         }
         assert.is_number(stats.symbols_included)
         assert.is_number(stats.diagnostics_included)
-        assert.is_number(stats.imports_included)
-        assert.is_number(stats.imports_filtered)
-        assert.is_number(stats.external_types_included)
+        assert.is_number(stats.inlay_hints_included)
         assert.is_number(stats.budget_used)
         assert.is_number(stats.budget_remaining)
+        assert.is_table(stats.capabilities_used)
     end)
 end)

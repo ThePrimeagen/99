@@ -48,24 +48,6 @@ local BLOCK_KINDS = {
     [M.SymbolKind.Namespace] = true,
 }
 
---- Symbols that should be formatted as function signatures
-local FUNCTION_KINDS = {
-    [M.SymbolKind.Function] = true,
-    [M.SymbolKind.Method] = true,
-    [M.SymbolKind.Constructor] = true,
-}
-
---- Get the display name for a SymbolKind
---- @param kind number LSP SymbolKind value
---- @return string Display name (lowercase)
-function M.kind_to_string(kind)
-    local name = M.SymbolKindName[kind]
-    if name then
-        return name:lower()
-    end
-    return "unknown"
-end
-
 --- Get a compact keyword for the symbol kind (for output)
 --- @param kind number LSP SymbolKind value
 --- @return string Compact keyword
@@ -95,13 +77,6 @@ end
 --- @return boolean
 function M.is_block_kind(kind)
     return BLOCK_KINDS[kind] == true
-end
-
---- Check if a symbol kind is a function-like symbol
---- @param kind number LSP SymbolKind value
---- @return boolean
-function M.is_function_kind(kind)
-    return FUNCTION_KINDS[kind] == true
 end
 
 --- Create indentation string
@@ -191,35 +166,6 @@ function M.format_file_context(file_path, symbols)
     return table.concat(lines, "\n")
 end
 
---- Format import context
---- @param imports _99.Lsp.Import[] The imports to format
---- @return string Formatted imports string
-function M.format_imports(imports)
-    if not imports or #imports == 0 then
-        return ""
-    end
-
-    local lines = { "", "Imports:" }
-
-    for _, import in ipairs(imports) do
-        local line = "  from " .. import.module_path .. ": "
-
-        if import.resolved_symbols and #import.resolved_symbols > 0 then
-            local symbol_strs = {}
-            for _, sym in ipairs(import.resolved_symbols) do
-                table.insert(symbol_strs, sym.signature or sym.name)
-            end
-            line = line .. table.concat(symbol_strs, ", ")
-        elseif import.symbols and #import.symbols > 0 then
-            line = line .. table.concat(import.symbols, ", ")
-        end
-
-        table.insert(lines, line)
-    end
-
-    return table.concat(lines, "\n")
-end
-
 --- Severity level names for diagnostics
 --- @type table<number, string>
 local SEVERITY_NAMES = {
@@ -267,83 +213,73 @@ function M.format_diagnostics(diagnostics)
     return table.concat(lines, "\n")
 end
 
---- Format external types for context
---- @param types _99.Lsp.ExternalType[] External types to format
---- @return string Formatted external types string
-function M.format_external_types(types)
-    if not types or #types == 0 then
+--- InlayHintKind constants (LSP 3.17)
+--- @enum _99.Lsp.InlayHintKind
+M.InlayHintKind = {
+    Type = 1,
+    Parameter = 2,
+}
+
+--- Format inlay hints for context (LSP 3.17)
+--- @param hints table[] LSP InlayHint array
+--- @return string Formatted inlay hints string
+function M.format_inlay_hints(hints)
+    if not hints or #hints == 0 then
         return ""
     end
 
-    local by_package = {}
-    for _, ext_type in ipairs(types) do
-        local pkg = ext_type.package_name or "unknown"
-        if not by_package[pkg] then
-            by_package[pkg] = {}
+    local lines = { "", "Inlay Hints:" }
+
+    for _, hint in ipairs(hints) do
+        local label = ""
+        if type(hint.label) == "string" then
+            label = hint.label
+        elseif type(hint.label) == "table" then
+            local parts = {}
+            for _, part in ipairs(hint.label) do
+                if type(part) == "string" then
+                    table.insert(parts, part)
+                elseif part.value then
+                    table.insert(parts, part.value)
+                end
+            end
+            label = table.concat(parts, "")
         end
-        table.insert(by_package[pkg], ext_type)
+
+        if label ~= "" then
+            local kind_str = ""
+            if hint.kind == M.InlayHintKind.Type then
+                kind_str = "type"
+            elseif hint.kind == M.InlayHintKind.Parameter then
+                kind_str = "param"
+            end
+
+            local pos = hint.position
+            local location = ""
+            if pos then
+                location = string.format(
+                    "%d:%d",
+                    (pos.line or 0) + 1,
+                    (pos.character or 0) + 1
+                )
+            end
+
+            if kind_str ~= "" then
+                table.insert(
+                    lines,
+                    string.format("  [%s] %s: %s", kind_str, location, label)
+                )
+            else
+                table.insert(lines, string.format("  %s: %s", location, label))
+            end
+        end
     end
 
-    local lines = { "", "External Types:" }
-
-    for pkg, pkg_types in pairs(by_package) do
-        table.insert(lines, "  " .. pkg .. ":")
-        for _, ext_type in ipairs(pkg_types) do
-            table.insert(
-                lines,
-                "    "
-                    .. ext_type.symbol_name
-                    .. ": "
-                    .. ext_type.type_signature
-            )
-        end
-    end
-
-    return table.concat(lines, "\n")
-end
-
---- Format signature help for context
---- @param sig_help _99.Lsp.SignatureHelp Signature help to format
---- @return string Formatted signature help string
-function M.format_signature_help(sig_help)
-    if not sig_help or not sig_help.signatures or #sig_help.signatures == 0 then
+    if #lines <= 2 then
         return ""
     end
 
-    local lines = { "", "Signature:" }
-
-    for _, sig in ipairs(sig_help.signatures) do
-        table.insert(lines, "  " .. sig.label)
-        if sig.documentation and sig.documentation ~= "" then
-            table.insert(lines, "    " .. sig.documentation)
-        end
-    end
-
     return table.concat(lines, "\n")
-end
-
---- Format content with budget constraint
---- @param content string Content to format
---- @param budget _99.Lsp.Budget Budget to check against
---- @return string Formatted content (potentially truncated)
---- @return boolean truncated Whether content was truncated
-function M.format_with_budget(content, budget)
-    if not content or content == "" then
-        return "", false
-    end
-
-    if budget:can_fit(content) then
-        return content, false
-    end
-
-    local remaining = budget:remaining()
-    if remaining <= 3 then
-        return "", true
-    end
-
-    local max_content_len = remaining - 3
-    local truncated = content:sub(1, max_content_len) .. "..."
-    return truncated, true
 end
 
 return M

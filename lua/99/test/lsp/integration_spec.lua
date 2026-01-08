@@ -8,22 +8,36 @@ describe("LSP module integration", function()
             local lsp = require("99.lsp")
             assert.is_not_nil(lsp)
             assert.is_function(lsp.is_available)
-            assert.is_function(lsp.get_client)
             assert.is_function(lsp.get_context)
             assert.is_function(lsp.default_config)
             assert.is_function(lsp.setup)
+        end)
+
+        it("should load lsp/async.lua", function()
+            local async = require("99.lsp.async")
+            assert.is_not_nil(async)
+            assert.is_function(async.await)
+            assert.is_function(async.run)
+            assert.is_function(async.run_with_timeout)
+            assert.is_function(async.parallel_map)
+        end)
+
+        it("should load lsp/requests.lua", function()
+            local requests = require("99.lsp.requests")
+            assert.is_not_nil(requests)
+            assert.is_function(requests.document_symbols)
+            assert.is_function(requests.hover)
+            assert.is_function(requests.inlay_hints)
+            assert.is_function(requests.batch_hover)
+            assert.is_function(requests.parse_hover_contents)
+            assert.is_function(requests.parse_symbol_response)
+            assert.is_function(requests.limit_symbols)
         end)
 
         it("should load lsp/budget.lua", function()
             local budget = require("99.lsp.budget")
             assert.is_not_nil(budget)
             assert.is_function(budget.new)
-        end)
-
-        it("should load lsp/cache.lua", function()
-            local Cache = require("99.lsp.cache")
-            assert.is_not_nil(Cache)
-            assert.is_function(Cache.new)
         end)
 
         it("should load lsp/context.lua", function()
@@ -40,107 +54,9 @@ describe("LSP module integration", function()
             assert.is_function(formatter.format_symbol)
             assert.is_function(formatter.format_file_context)
             assert.is_function(formatter.format_diagnostics)
-            assert.is_function(formatter.format_external_types)
-            assert.is_function(formatter.format_signature_help)
-            assert.is_function(formatter.format_with_budget)
+            assert.is_function(formatter.format_inlay_hints)
         end)
 
-        it("should load lsp/relevance.lua", function()
-            local relevance = require("99.lsp.relevance")
-            assert.is_not_nil(relevance)
-            assert.is_function(relevance.find_used_symbols)
-            assert.is_function(relevance.filter_relevant_imports)
-            assert.is_function(relevance.filter_relevant_symbols)
-        end)
-
-        it("should load lsp/parallel.lua", function()
-            local parallel = require("99.lsp.parallel")
-            assert.is_not_nil(parallel)
-            assert.is_function(parallel.create_collector)
-            assert.is_function(parallel.parallel_map)
-            assert.is_function(parallel.parallel_map_with_timeout)
-            assert.is_function(parallel.batch_lsp_request)
-            assert.is_function(parallel.cancel_all)
-            assert.is_function(parallel.wait_all)
-            assert.is_function(parallel.race)
-        end)
-
-        it("should load lsp/hover.lua", function()
-            local hover = require("99.lsp.hover")
-            assert.is_not_nil(hover)
-            assert.is_function(hover.get_hover)
-            assert.is_function(hover.batch_hover)
-            assert.is_function(hover.batch_hover_with_timeout)
-            assert.is_function(hover.enrich_symbols)
-            assert.is_function(hover.extract_type_signature)
-            assert.is_function(hover.extract_minimal_type)
-            assert.is_function(hover.extract_type_for_external)
-        end)
-
-        it("should load lsp/signature_help.lua", function()
-            local sig = require("99.lsp.signature_help")
-            assert.is_not_nil(sig)
-            assert.is_function(sig.get_signature_help)
-            assert.is_function(sig.batch_signature_help)
-            assert.is_function(sig.batch_signature_help_with_timeout)
-            assert.is_function(sig.format_signature)
-        end)
-
-        it("should load lsp/type_definition.lua", function()
-            local typedef = require("99.lsp.type_definition")
-            assert.is_not_nil(typedef)
-            assert.is_function(typedef.get_type_definition)
-            assert.is_function(typedef.batch_type_definitions)
-            assert.is_function(typedef.batch_type_definitions_with_timeout)
-        end)
-
-        it("should load lsp/diagnostics.lua", function()
-            local diag = require("99.lsp.diagnostics")
-            assert.is_not_nil(diag)
-            assert.is_function(diag.get_diagnostics)
-            assert.is_function(diag.filter_by_severity)
-            assert.is_function(diag.filter_by_range)
-            assert.is_function(diag.format_diagnostic)
-            assert.is_function(diag.get_errors_and_warnings)
-        end)
-
-        it("should load lsp/external.lua", function()
-            local external = require("99.lsp.external")
-            assert.is_not_nil(external)
-            assert.is_function(external.is_external_uri)
-            assert.is_function(external.extract_package_name)
-            assert.is_function(external.identify_external_imports)
-            assert.is_function(external.get_external_types)
-        end)
-
-        it("should load lsp/symbols.lua", function()
-            local symbols = require("99.lsp.symbols")
-            assert.is_not_nil(symbols)
-            assert.is_function(symbols.get_document_symbols)
-            assert.is_function(symbols.limit_symbols)
-        end)
-
-        it("should load lsp/imports.lua", function()
-            local imports = require("99.lsp.imports")
-            assert.is_not_nil(imports)
-            assert.is_function(imports.get_imports)
-            assert.is_function(imports.is_external_path)
-        end)
-
-        it("should load lsp/definitions.lua", function()
-            local defs = require("99.lsp.definitions")
-            assert.is_not_nil(defs)
-            assert.is_function(defs.get_definition)
-            assert.is_function(defs.ensure_buffer_loaded)
-        end)
-
-        it("should load lsp/fallback.lua", function()
-            local fallback = require("99.lsp.fallback")
-            assert.is_not_nil(fallback)
-            assert.is_function(fallback.is_available)
-            assert.is_function(fallback.get_symbols)
-            assert.is_function(fallback.get_treesitter_context)
-        end)
     end)
 
     describe("default config", function()
@@ -149,7 +65,6 @@ describe("LSP module integration", function()
             local config = lsp.default_config()
 
             assert.is_true(config.enabled)
-            eq(1, config.import_depth)
             eq("compact", config.format)
             eq(5000, config.timeout)
             eq(100, config.max_symbols)
@@ -157,9 +72,7 @@ describe("LSP module integration", function()
             eq(8000, config.max_context_tokens)
             eq(4, config.chars_per_token)
             assert.is_true(config.include_diagnostics)
-            assert.is_true(config.include_external_types)
-            eq(3600000, config.external_type_ttl)
-            assert.is_true(config.relevance_filter)
+            assert.is_false(config.include_inlay_hints)
         end)
 
         it("should apply custom config with setup", function()
@@ -202,65 +115,18 @@ describe("LSP module integration", function()
         end)
     end)
 
-    describe("relevance and formatter integration", function()
-        it("should filter and format imports", function()
-            local relevance = require("99.lsp.relevance")
-            local formatter = require("99.lsp.formatter")
+    describe("requests module utilities", function()
+        it("should parse hover contents", function()
+            local requests = require("99.lsp.requests")
 
-            local imports = {
-                {
-                    module_path = "utils",
-                    symbols = { "helper", "format" },
-                    resolved_symbols = {
-                        { name = "helper" },
-                        { name = "format" },
-                    },
-                },
-                {
-                    module_path = "unused",
-                    symbols = { "notUsed" },
-                    resolved_symbols = { { name = "notUsed" } },
-                },
-            }
+            local str_result = requests.parse_hover_contents("function test()")
+            eq("function test()", str_result)
 
-            local used = { "helper" }
-            local filtered = relevance.filter_relevant_imports(imports, used)
-            eq(1, #filtered)
-            eq("utils", filtered[1].module_path)
-
-            local formatted = formatter.format_imports(filtered)
-            assert.is_true(formatted:find("Imports:") ~= nil)
-            assert.is_true(formatted:find("utils") ~= nil)
-        end)
-    end)
-
-    describe("parallel utilities integration", function()
-        it("should work with collect_results pattern", function()
-            local parallel = require("99.lsp.parallel")
-
-            local called = false
-            local collected_results
-            local add_result, is_done = parallel.create_collector(
-                3,
-                function(results)
-                    called = true
-                    collected_results = results
-                end
-            )
-
-            add_result(1, "a", nil)
-            add_result(2, "b", nil)
-            add_result(3, "c", nil)
-
-            vim.wait(100, function()
-                return called
-            end)
-
-            assert.is_true(called)
-            eq("a", collected_results[1])
-            eq("b", collected_results[2])
-            eq("c", collected_results[3])
-            assert.is_true(is_done())
+            local markup_result = requests.parse_hover_contents({
+                kind = "markdown",
+                value = "```lua\nfunction test()\n```",
+            })
+            assert.is_true(markup_result:find("function test") ~= nil)
         end)
     end)
 
@@ -269,25 +135,24 @@ describe("LSP module integration", function()
             local stats = {
                 symbols_included = 10,
                 diagnostics_included = 2,
-                imports_included = 5,
-                imports_filtered = 3,
-                external_types_included = 1,
+                inlay_hints_included = 5,
                 budget_used = 2500,
                 budget_remaining = 1500,
+                capabilities_used = {
+                    "textDocument/documentSymbol",
+                    "textDocument/hover",
+                },
             }
 
             assert.is_number(stats.symbols_included)
             assert.is_number(stats.diagnostics_included)
-            assert.is_number(stats.imports_included)
-            assert.is_number(stats.imports_filtered)
-            assert.is_number(stats.external_types_included)
+            assert.is_number(stats.inlay_hints_included)
             assert.is_number(stats.budget_used)
             assert.is_number(stats.budget_remaining)
+            assert.is_table(stats.capabilities_used)
 
             eq(10, stats.symbols_included)
             eq(2, stats.diagnostics_included)
-            eq(5, stats.imports_included)
-            eq(3, stats.imports_filtered)
             eq(2500, stats.budget_used)
         end)
     end)
@@ -324,6 +189,29 @@ describe("LSP module integration", function()
             }
             local fn_line = formatter.format_symbol(fn_symbol, 0)
             assert.is_true(fn_line:find("fn") ~= nil)
+        end)
+    end)
+
+    describe("async module", function()
+        it("should create coroutine runners", function()
+            local async = require("99.lsp.async")
+
+            local completed = false
+            local result_value = nil
+
+            async.run(function()
+                return "test_result"
+            end, function(result)
+                completed = true
+                result_value = result
+            end)
+
+            vim.wait(100, function()
+                return completed
+            end)
+
+            assert.is_true(completed)
+            eq("test_result", result_value)
         end)
     end)
 end)
