@@ -142,12 +142,10 @@ function RequestContext:gather_lsp_context(callback)
                     #result,
                     "symbols",
                     stats and stats.symbols_included or 0,
-                    "imports",
-                    stats and stats.imports_included or 0,
-                    "imports_filtered",
-                    stats and stats.imports_filtered or 0,
                     "diagnostics",
                     stats and stats.diagnostics_included or 0,
+                    "inlay_hints",
+                    stats and stats.inlay_hints_included or 0,
                     "budget_used",
                     stats and stats.budget_used or 0
                 )
