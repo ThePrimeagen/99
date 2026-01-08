@@ -56,7 +56,6 @@ describe("LSP module integration", function()
             assert.is_function(formatter.format_diagnostics)
             assert.is_function(formatter.format_inlay_hints)
         end)
-
     end)
 
     describe("default config", function()
@@ -197,7 +196,7 @@ describe("LSP module integration", function()
             local async = require("99.lsp.async")
 
             local completed = false
-            local result_value = nil
+            local result_value
 
             async.run(function()
                 return "test_result"
