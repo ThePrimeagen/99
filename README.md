@@ -43,28 +43,22 @@ I make the assumption you are using Lazy
 				md_files = {
 					"AGENT.md",
 				},
+                --- Run `opencode models` to list the available models
+                model = "opencode/claude-sonnet-4-5"
 			})
-
-            -- Create your own short cuts for the different types of actions
-			vim.keymap.set("n", "<leader>9f", function()
-				_99.fill_in_function()
-			end)
-            -- take extra note that i have visual selection only in v mode
-            -- technically whatever your last visual selection is, will be used
-            -- so i have this set to visual mode so i dont screw up and use an
-            -- old visual selection
-            --
-            -- likely ill add a mode check and assert on required visual mode
-            -- so just prepare for it now
-			vim.keymap.set("v", "<leader>9v", function()
-				_99.visual()
-			end)
-
-            --- if you have a request you dont want to make any changes, just cancel it
-			vim.keymap.set("v", "<leader>9s", function()
-				_99.stop_all_requests()
-			end)
 		end,
+        keys = {
+            -- Create your own short cuts for the different types of actions
+            { mode = { "n" }, "<leader>9f", function() require("99").fill_in_function() end, desc = "Fill in function with 99" },
+            -- Take extra note that i have visual selection only in v mode technically whatever your
+            -- last visual selection is, will be used so i have this set to visual mode so i don't
+            -- screw up and use an old visual selection.
+            --
+            -- Likely I'll add a mode check and assert on required visual mode so just prepare for it now
+            { mode = { "v" }, "<leader>9v", function() require("99").visual() end,           desc = "Visual select and send to 99" },
+            --- if you have a request you don't want to make any changes, just cancel it
+            { mode = { "n", "v" }, "<leader>9s", function() require("99").stop_all_requests() end, desc = "Stop all 99 requests" },
+        }
 	},
 ```
 
