@@ -27,7 +27,7 @@ local function create_99_state()
         md_files = {},
         prompts = require("99.prompt-settings"),
         ai_stdout_rows = 3,
-        languages = { "lua", "go", "java" },
+        languages = { "lua", "go", "java", "cpp" },
         display_errors = false,
         __active_requests = {},
         __view_log_idx = 1,
