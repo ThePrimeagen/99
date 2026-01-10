@@ -11,14 +11,20 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      NVIM_VERSION: v0.11.5
+      NVIM_TREESITTER_SHA: 2ba5ec184609a96b513bf4c53a20512d64e27f39
+      XDG_DATA_HOME: ${{ github.workspace }}/.xdg/data
+      XDG_CACHE_HOME: ${{ github.workspace }}/.xdg/cache
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Install Neovim
       run: |
-        wget -q https://github.com/neovim/neovim/releases/download/v0.10.3/nvim-linux64.tar.gz
-        tar xzf nvim-linux64.tar.gz
-        sudo mv nvim-linux64 /opt/nvim
+        wget -q https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz
+        tar xzf nvim-linux-x86_64.tar.gz
+        sudo mv nvim-linux-x86_64 /opt/nvim
         sudo ln -s /opt/nvim/bin/nvim /usr/local/bin/nvim
 
     - name: Install luarocks
@@ -36,9 +42,34 @@ jobs:
         chmod +x stylua
         sudo mv stylua /usr/local/bin/
 
+    - name: Cache Neovim data (tree-sitter)
+      uses: actions/cache@v4
+      with:
+        path: .xdg
+        key: ${{ runner.os }}-nvim-${{ env.NVIM_VERSION }}-ts-${{ env.NVIM_TREESITTER_SHA }}
+
+    - name: Install tree-sitter CLI
+      run: |
+        node --version
+        npm --version
+        sudo npm install -g tree-sitter-cli
+        tree-sitter --version
+
     - name: Install plenary.nvim
       run: |
         git clone https://github.com/nvim-lua/plenary.nvim.git ../plenary.nvim
+
+    - name: Install nvim-treesitter (pinned)
+      run: |
+        git clone https://github.com/nvim-treesitter/nvim-treesitter.git ../nvim-treesitter
+        git -C ../nvim-treesitter checkout ${NVIM_TREESITTER_SHA}
+
+    - name: Install treesitter parsers
+      run: |
+        nvim --headless -u NONE -i NONE \
+          -c "set rtp+=../nvim-treesitter" \
+          -c "lua dofile('scripts/ci/install_treesitter_parsers.lua')" \
+          -c "qa"
 
     - name: Run pr_ready
       run: make pr_ready

@@ -21,18 +21,30 @@ runtime! plugin/plenary.vim
 runtime! plugin/nvim-treesitter.lua
 
 lua <<EOF
-local required_parsers = {
-    'c', 'cpp', 'go', 'lua', 'php', 'python', 'typescript', 'javascript', 'java', 'ruby', 'tsx', 'c_sharp', 'vue'
-}
-local installed_parsers = require'nvim-treesitter.info'.installed_parsers()
-local to_install = vim.tbl_filter(function(parser)
-  return not vim.tbl_contains(installed_parsers, parser)
-end, required_parsers)
+vim.opt.rtp:append(vim.fn.stdpath('data') .. '/site')
+
+-- so far, only lua and typescript parser are used in the test
+local required_parsers = { "lua", "typescript" }
+
+local function missing_parsers(parsers)
+  local missing = {}
+  local buf = vim.api.nvim_create_buf(false, true) -- false: no list, true: scratch buffer
+  for _, lang in ipairs(parsers) do
+    local ok = pcall(vim.treesitter.get_parser, buf, lang)
+    if not ok then
+      table.insert(missing, lang)
+    end
+  end
+  vim.api.nvim_buf_delete(buf, { force = true })
+  return missing
+end
+
+local to_install = missing_parsers(required_parsers)
 if #to_install > 0 then
-  -- fixes 'pos_delta >= 0' error - https://github.com/nvim-lua/plenary.nvim/issues/52
-  vim.cmd('set display=lastline')
-  -- make "TSInstall*" available
-  vim.cmd 'runtime! plugin/nvim-treesitter.vim'
-  vim.cmd('TSInstallSync ' .. table.concat(to_install, ' '))
+  error(
+    "Missing Tree-sitter parsers: "
+      .. table.concat(to_install, ", ")
+      .. "\nInstall them with: TSInstall " .. table.concat(to_install, " ")
+  )
 end
 EOF
