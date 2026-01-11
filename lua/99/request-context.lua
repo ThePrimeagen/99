@@ -1,6 +1,8 @@
 local Logger = require("99.logger.logger")
 local utils = require("99.utils")
 local random_file = utils.random_file
+local geo = require("99.geo")
+local Point = geo.Point
 
 --- @class _99.RequestContext
 --- @field md_file_names string[]
@@ -93,13 +95,103 @@ end
 --- @return self
 function RequestContext:finalize()
     self:_read_md_files()
+
     if self.range then
+        local ts = require("99.editor.treesitter")
+        local cursor = Point:new(self.range.start.row, self.range.start.col)
+
+        -- 1. Get preceding comments/docstrings
+        local comments = ts.get_preceding_comments(self, self.range)
+        if #comments > 0 then
+            table.insert(
+                self.ai_context,
+                string.format(
+                    "<FunctionDocumentation>\n%s\n</FunctionDocumentation>",
+                    table.concat(comments, "\n")
+                )
+            )
+        end
+
+        -- 2. Get enclosing context (class, impl, trait, module, struct, interface)
+        local enclosing = ts.get_enclosing_context(self, cursor)
+        if enclosing then
+            local context_parts = {}
+
+            -- Rust: include impl header only (not full body)
+            if self.file_type == "rust" and enclosing.impl then
+                local header =
+                    ts.get_rust_impl_header(enclosing.impl.node, self.buffer)
+                if header and header ~= "" then
+                    table.insert(context_parts, "impl block: " .. header)
+                end
+            end
+
+            -- Other contexts: include full text
+            for kind, data in pairs(enclosing) do
+                -- Skip impl for Rust (handled above with header only)
+                if not (self.file_type == "rust" and kind == "impl") then
+                    table.insert(
+                        context_parts,
+                        string.format("%s:\n%s", kind, data.range:to_text())
+                    )
+                end
+            end
+
+            if #context_parts > 0 then
+                table.insert(
+                    self.ai_context,
+                    string.format(
+                        "<EnclosingContext>\n%s\n</EnclosingContext>",
+                        table.concat(context_parts, "\n---\n")
+                    )
+                )
+            end
+        end
+
+        -- 3. Go: include interface definitions
+        if self.file_type == "go" then
+            local interfaces = ts.get_go_interfaces(self)
+            if #interfaces > 0 then
+                local iface_texts = {}
+                for _, iface in ipairs(interfaces) do
+                    table.insert(iface_texts, iface.text)
+                end
+                table.insert(
+                    self.ai_context,
+                    string.format(
+                        "<Interfaces>\n%s\n</Interfaces>",
+                        table.concat(iface_texts, "\n---\n")
+                    )
+                )
+            end
+        end
+
+        -- 4. C: include function prototypes from current file and headers
+        if self.file_type == "c" then
+            -- Extract function name from range if possible
+            local func_text = self.range:to_text()
+            local func_name = func_text:match("([%w_]+)%s*%(")
+            if func_name then
+                local prototypes = ts.get_c_prototypes(self, func_name)
+                if #prototypes > 0 then
+                    table.insert(
+                        self.ai_context,
+                        string.format(
+                            "<FunctionPrototypes>\n%s\n</FunctionPrototypes>",
+                            table.concat(prototypes, "\n")
+                        )
+                    )
+                end
+            end
+        end
+
         table.insert(self.ai_context, self._99.prompts.get_file_location(self))
         table.insert(
             self.ai_context,
             self._99.prompts.get_range_text(self.range)
         )
     end
+
     table.insert(
         self.ai_context,
         self._99.prompts.tmp_file_location(self.tmp_file)
