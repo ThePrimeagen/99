@@ -103,4 +103,42 @@ function M.create_file(contents, file_type, row, col)
     return bufnr
 end
 
+--- Assert that the request query contains expected content in a specific XML section
+--- @param query string
+--- @param section string  -- e.g., "FunctionDocumentation"
+--- @param expected_content string
+function M.assert_section_contains(query, section, expected_content)
+    local pattern = "<" .. section .. ">(.-)</" .. section .. ">"
+    local content = query:match(pattern)
+    assert(content ~= nil, "Section <" .. section .. "> not found in query")
+    assert(
+        content:find(expected_content, 1, true) ~= nil,
+        "Expected '"
+            .. expected_content
+            .. "' in <"
+            .. section
+            .. ">, got: "
+            .. content
+    )
+end
+
+--- Assert that a section exists in the query
+--- @param query string
+--- @param section string
+function M.assert_section_exists(query, section)
+    local pattern = "<" .. section .. ">"
+    assert(query:match(pattern) ~= nil, "Section <" .. section .. "> not found")
+end
+
+--- Assert that a section does NOT exist in the query
+--- @param query string
+--- @param section string
+function M.assert_section_not_exists(query, section)
+    local pattern = "<" .. section .. ">"
+    assert(
+        query:match(pattern) == nil,
+        "Section <" .. section .. "> should not exist"
+    )
+end
+
 return M
