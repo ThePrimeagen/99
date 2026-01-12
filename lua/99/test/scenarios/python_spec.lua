@@ -35,28 +35,6 @@ describe("Python Scenarios", function()
                 r(buffer)
             )
         end)
-
-        it("detects async function", function()
-            local content = { "async def fetch_data(url):", "    pass" }
-            local p, buffer = setup(content, 1, 0)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "async def fetch_data(url):"
-            )
-
-            p:resolve(
-                "success",
-                "async def fetch_data(url):\n    return await http.get(url)"
-            )
-            test_utils.next_frame()
-            eq({
-                "async def fetch_data(url):",
-                "    return await http.get(url)",
-            }, r(buffer))
-        end)
     end)
 
     describe("comments and docstrings", function()
@@ -79,41 +57,6 @@ describe("Python Scenarios", function()
     end)
 
     describe("class methods", function()
-        it("includes enclosing class in context", function()
-            local content = {
-                "class Calculator:",
-                "    def __init__(self):",
-                "        self.value = 0",
-                "",
-                "    def add(self, n):",
-                "        pass",
-            }
-            local p, buffer = setup(content, 5, 4)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_contains(
-                p.request.query,
-                "EnclosingContext",
-                "class Calculator:"
-            )
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "def add(self, n):"
-            )
-
-            p:resolve("success", "def add(self, n):\n        self.value += n")
-            test_utils.next_frame()
-            eq({
-                "class Calculator:",
-                "    def __init__(self):",
-                "        self.value = 0",
-                "",
-                "    def add(self, n):",
-                "        self.value += n",
-            }, r(buffer))
-        end)
-
         it("handles staticmethod decorator", function()
             local content = {
                 "class Math:",

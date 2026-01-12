@@ -52,46 +52,6 @@ describe("Ruby Scenarios", function()
     end)
 
     describe("class methods", function()
-        it("includes enclosing class in context", function()
-            local content = {
-                "class Calculator",
-                "  def initialize",
-                "    @value = 0",
-                "  end",
-                "",
-                "  def add(n)",
-                "  end",
-                "end",
-            }
-            local p, buffer = setup(content, 6, 2)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_contains(
-                p.request.query,
-                "EnclosingContext",
-                "class Calculator"
-            )
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "def add(n)"
-            )
-
-            p:resolve("success", "def add(n)\n    @value += n\n  end")
-            test_utils.next_frame()
-            eq({
-                "class Calculator",
-                "  def initialize",
-                "    @value = 0",
-                "  end",
-                "",
-                "  def add(n)",
-                "    @value += n",
-                "  end",
-                "end",
-            }, r(buffer))
-        end)
-
         it("handles self. class method", function()
             local content =
                 { "class Math", "  def self.square(x)", "  end", "end" }

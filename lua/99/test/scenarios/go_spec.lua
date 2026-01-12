@@ -164,37 +164,4 @@ describe("Go Scenarios", function()
             )
         end)
     end)
-
-    describe("closures", function()
-        it("detects closure in variable assignment", function()
-            local content = {
-                "package main",
-                "",
-                "func main() {",
-                "\tdouble := func(x int) int {",
-                "\t}",
-                "}",
-            }
-            local p, buffer = setup(content, 4, 12)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "func(x int) int {"
-            )
-
-            p:resolve("success", "func(x int) int {\n\t\treturn x * 2\n\t}")
-            test_utils.next_frame()
-            eq({
-                "package main",
-                "",
-                "func main() {",
-                "\tdouble := func(x int) int {",
-                "\t\treturn x * 2",
-                "\t}",
-                "}",
-            }, r(buffer))
-        end)
-    end)
 end)

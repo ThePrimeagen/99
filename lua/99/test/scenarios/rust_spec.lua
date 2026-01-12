@@ -26,21 +26,6 @@ describe("Rust Scenarios", function()
             )
         end)
 
-        it("detects async function", function()
-            local content = {
-                "async fn fetch_data(url: &str) -> Result<String, Error> {",
-                "}",
-            }
-            local p, _ = setup(content, 1, 0)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "async fn fetch_data(url: &str)"
-            )
-        end)
-
         it("detects function with generics", function()
             local content = { "fn first<T>(items: &[T]) -> Option<&T> {", "}" }
             local p, _ = setup(content, 1, 0)
@@ -170,33 +155,6 @@ describe("Rust Scenarios", function()
     end)
 
     describe("closures", function()
-        it("detects closure in variable assignment", function()
-            local content = {
-                "fn main() {",
-                "    let double = |x: i32| -> i32 {",
-                "    };",
-                "}",
-            }
-            local p, buffer = setup(content, 2, 18)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "|x: i32| -> i32 {"
-            )
-
-            p:resolve("success", "|x: i32| -> i32 {\n        x * 2\n    }")
-            test_utils.next_frame()
-            eq({
-                "fn main() {",
-                "    let double = |x: i32| -> i32 {",
-                "        x * 2",
-                "    };",
-                "}",
-            }, r(buffer))
-        end)
-
         it("detects simple closure without type annotations", function()
             local content =
                 { "fn main() {", "    let add = |a, b| {", "    };", "}" }

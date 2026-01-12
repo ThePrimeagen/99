@@ -51,21 +51,6 @@ describe("TypeScript Scenarios", function()
                 "};",
             }, r(buffer))
         end)
-
-        it("detects async function", function()
-            local content = {
-                "async function fetchData(url: string): Promise<string> {",
-                "}",
-            }
-            local p, _ = setup(content, 1, 0)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "async function fetchData(url: string)"
-            )
-        end)
     end)
 
     describe("comments", function()
@@ -87,44 +72,6 @@ describe("TypeScript Scenarios", function()
     end)
 
     describe("class methods", function()
-        it("includes enclosing class in context", function()
-            local content = {
-                "class Calculator {",
-                "    private value: number = 0;",
-                "",
-                "    add(n: number): void {",
-                "    }",
-                "}",
-            }
-            local p, buffer = setup(content, 4, 4)
-            _99.fill_in_function()
-            assert.is_not_nil(p.request)
-            test_utils.assert_section_exists(
-                p.request.query,
-                "EnclosingContext"
-            )
-            test_utils.assert_section_contains(
-                p.request.query,
-                "FunctionText",
-                "add(n: number): void {"
-            )
-
-            p:resolve(
-                "success",
-                "add(n: number): void {\n        this.value += n;\n    }"
-            )
-            test_utils.next_frame()
-            eq({
-                "class Calculator {",
-                "    private value: number = 0;",
-                "",
-                "    add(n: number): void {",
-                "        this.value += n;",
-                "    }",
-                "}",
-            }, r(buffer))
-        end)
-
         it("detects static method", function()
             local content = {
                 "class Math {",

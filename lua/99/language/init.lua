@@ -1,4 +1,5 @@
 local Logger = require("99.logger.logger")
+local config = require("99.language.config")
 
 --- @class _99.LanguageOps
 --- @field log_item fun(item_name: string): string
@@ -46,7 +47,7 @@ end
 function M.initialize(_99)
     M.languages = {}
     for _, lang in ipairs(_99.languages) do
-        M.languages[lang] = require("99.language." .. lang)
+        M.languages[lang] = config.get(lang)
     end
 end
 

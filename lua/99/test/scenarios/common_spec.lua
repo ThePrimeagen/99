@@ -65,7 +65,7 @@ describe("Common Scenarios", function()
                 it(
                     "cancels request when stop_all_requests is called",
                     function()
-                        local d = shared.cancel_request[lang]
+                        local d = shared.simple_request[lang]
                         local p, buffer =
                             test_utils.setup_test(d.code, lang, d.row, d.col)
                         _99.fill_in_function()
@@ -79,7 +79,7 @@ describe("Common Scenarios", function()
                 )
 
                 it("handles error response gracefully", function()
-                    local d = shared.error_response[lang]
+                    local d = shared.simple_request[lang]
                     local p, buffer =
                         test_utils.setup_test(d.code, lang, d.row, d.col)
                     _99.fill_in_function()
@@ -88,6 +88,72 @@ describe("Common Scenarios", function()
                     eq(d.code, test_utils.lines(buffer))
                 end)
             end)
+
+            -- Partial language coverage tests
+            if shared.async_function[lang] then
+                describe("async functions", function()
+                    it("detects async function", function()
+                        local d = shared.async_function[lang]
+                        local p, buffer =
+                            test_utils.setup_test(d.code, lang, d.row, d.col)
+                        _99.fill_in_function()
+                        assert.is_not_nil(p.request)
+                        test_utils.assert_section_contains(
+                            p.request.query,
+                            "FunctionText",
+                            d.check
+                        )
+                        p:resolve("success", d.resolve)
+                        test_utils.next_frame()
+                        eq(d.expect, test_utils.lines(buffer))
+                    end)
+                end)
+            end
+
+            if shared.enclosing_class[lang] then
+                describe("class methods", function()
+                    it("includes enclosing class in context", function()
+                        local d = shared.enclosing_class[lang]
+                        local p, buffer =
+                            test_utils.setup_test(d.code, lang, d.row, d.col)
+                        _99.fill_in_function()
+                        assert.is_not_nil(p.request)
+                        test_utils.assert_section_contains(
+                            p.request.query,
+                            "EnclosingContext",
+                            d.ctx_check
+                        )
+                        test_utils.assert_section_contains(
+                            p.request.query,
+                            "FunctionText",
+                            d.fn_check
+                        )
+                        p:resolve("success", d.resolve)
+                        test_utils.next_frame()
+                        eq(d.expect, test_utils.lines(buffer))
+                    end)
+                end)
+            end
+
+            if shared.closure[lang] then
+                describe("closures", function()
+                    it("detects closure in variable assignment", function()
+                        local d = shared.closure[lang]
+                        local p, buffer =
+                            test_utils.setup_test(d.code, lang, d.row, d.col)
+                        _99.fill_in_function()
+                        assert.is_not_nil(p.request)
+                        test_utils.assert_section_contains(
+                            p.request.query,
+                            "FunctionText",
+                            d.check
+                        )
+                        p:resolve("success", d.resolve)
+                        test_utils.next_frame()
+                        eq(d.expect, test_utils.lines(buffer))
+                    end)
+                end)
+            end
         end)
     end
 end)

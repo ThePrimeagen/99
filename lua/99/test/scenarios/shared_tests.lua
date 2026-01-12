@@ -227,7 +227,7 @@ M.multi_line_comment = {
     },
 }
 
-M.cancel_request = {
+M.simple_request = {
     c = { code = { "void cancel_me(void) {", "}" }, row = 1, col = 0 },
     python = { code = { "def cancel_me():", "    pass" }, row = 1, col = 0 },
     go = {
@@ -245,21 +245,171 @@ M.cancel_request = {
     },
 }
 
-M.error_response = {
-    c = { code = { "void error_case(void) {", "}" }, row = 1, col = 0 },
-    python = { code = { "def error_case():", "    pass" }, row = 1, col = 0 },
-    go = {
-        code = { "package main", "", "func errorCase() {", "}" },
-        row = 3,
-        col = 0,
-    },
-    ruby = { code = { "def error_case", "end" }, row = 1, col = 0 },
-    rust = { code = { "fn error_case() {", "}" }, row = 1, col = 0 },
-    lua = { code = { "function error_case()", "end" }, row = 1, col = 0 },
-    typescript = {
-        code = { "function errorCase(): void {", "}" },
+-- Partial language coverage tests
+M.async_function = {
+    python = {
+        code = { "async def fetch_data(url):", "    pass" },
         row = 1,
         col = 0,
+        check = "async def fetch_data(url):",
+        resolve = "async def fetch_data(url):\n    return await http.get(url)",
+        expect = {
+            "async def fetch_data(url):",
+            "    return await http.get(url)",
+        },
+    },
+    rust = {
+        code = {
+            "async fn fetch_data(url: &str) -> Result<String, Error> {",
+            "}",
+        },
+        row = 1,
+        col = 0,
+        check = "async fn fetch_data(url: &str)",
+        resolve = "async fn fetch_data(url: &str) -> Result<String, Error> {\n    Ok(url.to_string())\n}",
+        expect = {
+            "async fn fetch_data(url: &str) -> Result<String, Error> {",
+            "    Ok(url.to_string())",
+            "}",
+        },
+    },
+    typescript = {
+        code = {
+            "async function fetchData(url: string): Promise<string> {",
+            "}",
+        },
+        row = 1,
+        col = 0,
+        check = "async function fetchData(url: string)",
+        resolve = "async function fetchData(url: string): Promise<string> {\n    return await fetch(url);\n}",
+        expect = {
+            "async function fetchData(url: string): Promise<string> {",
+            "    return await fetch(url);",
+            "}",
+        },
+    },
+}
+
+M.enclosing_class = {
+    python = {
+        code = {
+            "class Calculator:",
+            "    def __init__(self):",
+            "        self.value = 0",
+            "",
+            "    def add(self, n):",
+            "        pass",
+        },
+        row = 5,
+        col = 4,
+        ctx_check = "class Calculator:",
+        fn_check = "def add(self, n):",
+        resolve = "def add(self, n):\n        self.value += n",
+        expect = {
+            "class Calculator:",
+            "    def __init__(self):",
+            "        self.value = 0",
+            "",
+            "    def add(self, n):",
+            "        self.value += n",
+        },
+    },
+    ruby = {
+        code = {
+            "class Calculator",
+            "  def initialize",
+            "    @value = 0",
+            "  end",
+            "",
+            "  def add(n)",
+            "  end",
+            "end",
+        },
+        row = 6,
+        col = 2,
+        ctx_check = "class Calculator",
+        fn_check = "def add(n)",
+        resolve = "def add(n)\n    @value += n\n  end",
+        expect = {
+            "class Calculator",
+            "  def initialize",
+            "    @value = 0",
+            "  end",
+            "",
+            "  def add(n)",
+            "    @value += n",
+            "  end",
+            "end",
+        },
+    },
+    typescript = {
+        code = {
+            "class Calculator {",
+            "    private value: number = 0;",
+            "",
+            "    add(n: number): void {",
+            "    }",
+            "}",
+        },
+        row = 4,
+        col = 4,
+        ctx_check = "class Calculator",
+        fn_check = "add(n: number): void {",
+        resolve = "add(n: number): void {\n        this.value += n;\n    }",
+        expect = {
+            "class Calculator {",
+            "    private value: number = 0;",
+            "",
+            "    add(n: number): void {",
+            "        this.value += n;",
+            "    }",
+            "}",
+        },
+    },
+}
+
+M.closure = {
+    go = {
+        code = {
+            "package main",
+            "",
+            "func main() {",
+            "\tdouble := func(x int) int {",
+            "\t}",
+            "}",
+        },
+        row = 4,
+        col = 12,
+        check = "func(x int) int {",
+        resolve = "func(x int) int {\n\t\treturn x * 2\n\t}",
+        expect = {
+            "package main",
+            "",
+            "func main() {",
+            "\tdouble := func(x int) int {",
+            "\t\treturn x * 2",
+            "\t}",
+            "}",
+        },
+    },
+    rust = {
+        code = {
+            "fn main() {",
+            "    let double = |x: i32| -> i32 {",
+            "    };",
+            "}",
+        },
+        row = 2,
+        col = 18,
+        check = "|x: i32| -> i32 {",
+        resolve = "|x: i32| -> i32 {\n        x * 2\n    }",
+        expect = {
+            "fn main() {",
+            "    let double = |x: i32| -> i32 {",
+            "        x * 2",
+            "    };",
+            "}",
+        },
     },
 }
 
