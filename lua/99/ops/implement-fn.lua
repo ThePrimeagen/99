@@ -67,7 +67,7 @@ local function implement_fn(context)
         at_call_site:stop()
     end)
 
-    request:add_prompt_content(context._99.prompts.prompts.implement_function)
+    request:add_prompt_content(context._99.prompts.prompts.implement_function(context))
     request:start({
         on_stdout = function(line)
             code_placement:push(line)

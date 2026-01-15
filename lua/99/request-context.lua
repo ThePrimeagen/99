@@ -93,6 +93,7 @@ end
 --- @return self
 function RequestContext:finalize()
     self:_read_md_files()
+    table.insert(self.ai_context, self._99.prompts.prompts.role(self))
     if self.range then
         table.insert(self.ai_context, self._99.prompts.get_file_location(self))
         table.insert(
@@ -102,7 +103,10 @@ function RequestContext:finalize()
     end
     table.insert(
         self.ai_context,
-        self._99.prompts.tmp_file_location(self.tmp_file)
+        self._99.prompt_settings.tmp_file_location(
+            self.tmp_file,
+            self._99.prompts.prompts
+        )
     )
     return self
 end

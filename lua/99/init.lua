@@ -12,7 +12,10 @@ local Range = require("99.geo").Range
 --- @class _99.StateProps
 --- @field model string
 --- @field md_files string[]
---- @field prompts _99.Prompts
+--- @field prompt_settings table
+--- @field prompts table
+--- @field mode string
+--- @field writer_language string
 --- @field ai_stdout_rows number
 --- @field languages string[]
 --- @field display_errors boolean
@@ -20,12 +23,31 @@ local Range = require("99.geo").Range
 --- @field __active_requests _99.Cleanup[]
 --- @field __view_log_idx number
 
+--- @return string
+local function get_default_language()
+    local spelllang = vim.api.nvim_get_option_value("spelllang", { scope = "global" })
+    if spelllang and spelllang ~= "" then
+        return spelllang
+    end
+    local lang = vim.env.LANG
+    if lang then
+        return lang:sub(1, 5):gsub("_", "-")
+    end
+    return "en"
+end
+
 --- @return _99.StateProps
 local function create_99_state()
+    local prompt_settings = require("99.prompt-settings")
     return {
         model = "opencode/claude-sonnet-4-5",
         md_files = {},
-        prompts = require("99.prompt-settings"),
+        prompt_settings = prompt_settings,
+        prompts = {
+            prompts = prompt_settings.modes.code,
+        },
+        mode = "code",
+        writer_language = get_default_language(),
         ai_stdout_rows = 3,
         languages = { "lua", "go", "java", "cpp" },
         display_errors = false,
@@ -47,7 +69,10 @@ end
 --- @class _99.State
 --- @field model string
 --- @field md_files string[]
---- @field prompts _99.Prompts
+--- @field prompt_settings table
+--- @field prompts table
+--- @field mode string
+--- @field writer_language string
 --- @field ai_stdout_rows number
 --- @field languages string[]
 --- @field display_errors boolean
@@ -61,7 +86,22 @@ _99_State.__index = _99_State
 function _99_State.new()
     local props = create_99_state()
     ---@diagnostic disable-next-line: return-type-mismatch
-    return setmetatable(props, _99_State)
+    local self = setmetatable(props, _99_State)
+
+    self.prompts.get_file_location = self.prompt_settings.get_file_location
+    self.prompts.get_range_text = self.prompt_settings.get_range_text
+    self.prompts.tmp_file_location = self.prompt_settings.tmp_file_location
+
+    return self
+end
+
+function _99_State:set_mode(mode)
+    if not self.prompt_settings.modes[mode] then
+        Logger:error("Invalid mode: " .. mode)
+        return
+    end
+    self.mode = mode
+    self.prompts.prompts = self.prompt_settings.modes[mode]
 end
 
 local _active_request_id = 0
@@ -130,6 +170,10 @@ function _99.info()
         string.format("Agent Files: %s", table.concat(_99_state.md_files, ", "))
     )
     table.insert(info, string.format("Model: %s", _99_state.model))
+    table.insert(info, string.format("Mode: %s", _99_state.mode))
+    if _99_state.mode == "writer" then
+        table.insert(info, string.format("Writer Language: %s", _99_state.writer_language))
+    end
     table.insert(
         info,
         string.format("AI Stdout Rows: %d", _99_state.ai_stdout_rows)
@@ -143,6 +187,21 @@ function _99.info()
         string.format("Active Requests: %d", _99_state:active_request_count())
     )
     Window.display_centered_message(info)
+end
+
+function _99.set_mode(mode)
+    _99_state:set_mode(mode)
+end
+
+function _99.toggle_mode()
+    local new_mode = _99_state.mode == "code" and "writer" or "code"
+    _99.set_mode(new_mode)
+    print("Mode switched to: " .. new_mode)
+end
+
+function _99.set_writer_language(lang)
+    _99_state.writer_language = lang
+    print("Writer language set to: " .. lang)
 end
 
 function _99.fill_in_function_prompt()
@@ -301,6 +360,93 @@ end
 function _99.set_model(model)
     _99_state.model = model
     return _99
+end
+
+function _99.select_model()
+    vim.system({ "opencode", "models" }, { text = true }, function(obj)
+        if obj.code ~= 0 then
+            vim.schedule(function()
+                vim.notify(
+                    "Failed to list models: " .. (obj.stderr or "unknown error"),
+                    vim.log.levels.ERROR
+                )
+            end)
+            return
+        end
+
+        local models = {}
+        for line in obj.stdout:gmatch("[^\r\n]+") do
+            local m = line:gsub("^%s*", ""):gsub("%s*$", "")
+            if m ~= "" then
+                table.insert(models, m)
+            end
+        end
+
+        if #models == 0 then
+            vim.schedule(function()
+                vim.notify("No models found", vim.log.levels.WARN)
+            end)
+            return
+        end
+
+        vim.schedule(function()
+            -- We avoid using vim.ui.select if there are many models because some UI plugins (like snacks.nvim)
+            -- have bugs with large lists (integral height error).
+            -- Instead, we'll use a custom buffer-based picker if the list is large,
+            -- or if the user preferred a more stable method.
+
+            local function fallback_input()
+                vim.ui.input({
+                    prompt = "Enter model name (large list fallback): ",
+                    default = _99_state.model,
+                }, function(input)
+                    if input and input ~= "" then
+                        _99.set_model(input)
+                        vim.notify("99 Model set to: " .. input)
+                    end
+                end)
+            end
+
+            -- If the list is reasonably small, try vim.ui.select
+            if #models < 50 then
+                local ok, err = pcall(vim.ui.select, models, {
+                    prompt = "Select 99 Model:",
+                }, function(choice)
+                    if choice then
+                        _99.set_model(choice)
+                        vim.notify("99 Model set to: " .. choice)
+                    end
+                end)
+                if not ok then
+                    fallback_input()
+                end
+                return
+            end
+
+            -- For large lists, we create a temporary buffer to avoid snacks.nvim bugs
+            local win, _ = Window.create_centered_window()
+            vim.api.nvim_buf_set_lines(win.buf_id, 0, -1, false, models)
+            vim.api.nvim_buf_set_name(win.buf_id, "99-model-selector")
+            vim.bo[win.buf_id].modifiable = false
+            vim.bo[win.buf_id].buftype = "nofile"
+
+            vim.notify("99: Use <Enter> to select a model, 'q' to cancel", vim.log.levels.INFO)
+
+            vim.keymap.set("n", "<CR>", function()
+                local cursor = vim.api.nvim_win_get_cursor(win.win_id)
+                local choice = models[cursor[1]]
+                Window.clear_active_popups()
+                if choice then
+                    _99.set_model(choice)
+                    vim.notify("99 Model set to: " .. choice)
+                end
+            end, { buffer = win.buf_id })
+
+            vim.keymap.set("n", "q", function()
+                Window.clear_active_popups()
+            end, { buffer = win.buf_id })
+        end)
+    end)
 end
 
 function _99.__debug()

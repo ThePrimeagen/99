@@ -59,7 +59,7 @@ local function fill_in_function(context, additional_prompt)
     end
 
     local request = Request.new(context)
-    local full_prompt = context._99.prompts.prompts.fill_in_function()
+    local full_prompt = context._99.prompts.prompts.fill_in_function(context)
     if additional_prompt then
         full_prompt =
             context._99.prompts.prompts.prompt(additional_prompt, full_prompt)

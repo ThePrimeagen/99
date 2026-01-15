@@ -64,9 +64,40 @@ I make the assumption you are using Lazy
 			vim.keymap.set("v", "<leader>9s", function()
 				_99.stop_all_requests()
 			end)
+
+            -- Mode switching (Code vs Writer)
+            vim.keymap.set("n", "<leader>9t", function()
+                _99.toggle_mode()
+            end)
+
+            -- Check current status (Mode, Language, etc)
+            vim.keymap.set("n", "<leader>9i", function()
+                _99.info()
+            end)
+
+            -- Select model from available opencode models
+            vim.keymap.set("n", "<leader>9m", function()
+                _99.select_model()
+            end)
 		end,
 	},
 ```
+
+## Modes of Operation
+
+99 has two primary modes: **Code Assistant** and **Writer's Assistant**.
+
+### Code Assistant (Default)
+Focused on software engineering tasks. It expects code context and provides canonical, robust implementations.
+
+### Writer's Assistant
+Designed for text editing, correction, and creative writing. It acts as a professional editor to improve clarity, flow, and grammar. It checks the `:set spelllang` of your current buffer. If no spelllang is set, it falls back to your system's `$LANG`. Also, you can override this with `:lua require("99").set_writer_language("pt-BR")`.
+
+### Toggle between modes
+To switch modes, use `require("99").toggle_mode()` or `require("99").set_mode("writer")`.
+
+## Model Selection
+You can dynamically change the model being used by 99. By default, it uses `opencode/claude-sonnet-4-5`. To see a list of available models and pick one: `:lua require("99").select_model()`.This will query `opencode` for all available models and present them using `vim.ui.select`.
 
 ## API
 You can see the full api at [99 API](./lua/99/init.lua)

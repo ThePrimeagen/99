@@ -41,7 +41,7 @@ local function over_range(context, range, prompt)
         request:cancel()
     end)
 
-    local full_prompt = context._99.prompts.prompts.visual_selection(range)
+    local full_prompt = context._99.prompts.prompts.visual_selection(range, context)
     if prompt then
         full_prompt = context._99.prompts.prompts.prompt(prompt, full_prompt)
     end
