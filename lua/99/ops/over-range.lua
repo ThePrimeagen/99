@@ -78,12 +78,7 @@ local function over_range(context, range, prompt)
                 --- HACK: i am adding a new line here because above range will add a mark to the line above.
                 --- that way this appears to be added to "the same line" as the visual selection was
                 --- originally take from
-                ---
-                --- If the selection is on the first line, we don't want to add a new line
-                --- because the mark is already at the beginning of the file.
-                if new_range.start.row > 1 or new_range.start.col > 1 then
-                    table.insert(lines, 1, "")
-                end
+                table.insert(lines, 1, "")
 
                 new_range:replace_text(lines)
             end
