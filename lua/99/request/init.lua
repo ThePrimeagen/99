@@ -53,9 +53,7 @@ function OpenCodeProvider:make_request(query, request, observer)
         {
             text = true,
             stdout = vim.schedule_wrap(function(err, data)
-                if data then
-                    logger:debug("stdout", "data", data)
-                end
+                logger:debug("stdout", "data", data)
                 if request:is_cancelled() then
                     once_complete("cancelled", "")
                     return
@@ -63,14 +61,12 @@ function OpenCodeProvider:make_request(query, request, observer)
                 if err and err ~= "" then
                     logger:debug("stdout#error", "err", err)
                 end
-                if not err and data then
+                if not err then
                     observer.on_stdout(data)
                 end
             end),
             stderr = vim.schedule_wrap(function(err, data)
-                if data then
-                    logger:debug("stderr", "data", data)
-                end
+                logger:debug("stderr", "data", data)
                 if request:is_cancelled() then
                     once_complete("cancelled", "")
                     return
@@ -78,7 +74,7 @@ function OpenCodeProvider:make_request(query, request, observer)
                 if err and err ~= "" then
                     logger:debug("stderr#error", "err", err)
                 end
-                if not err and data then
+                if not err then
                     observer.on_stderr(data)
                 end
             end),
@@ -91,20 +87,15 @@ function OpenCodeProvider:make_request(query, request, observer)
             end
             if obj.code ~= 0 then
                 local str = string.format(
-                    "process exit code: %d\nSTDOUT: %s\nSTDERR: %s",
+                    "process exit code: %d\n%s",
                     obj.code,
-                    obj.stdout or "",
-                    obj.stderr or ""
+                    vim.inspect(obj)
                 )
                 once_complete("failed", str)
                 logger:fatal(
                     "opencode make_query failed",
-                    "exit_code",
-                    obj.code,
-                    "stdout",
-                    obj.stdout,
-                    "stderr",
-                    obj.stderr
+                    "obj from results",
+                    obj
                 )
             end
             vim.schedule(function()
@@ -114,9 +105,7 @@ function OpenCodeProvider:make_request(query, request, observer)
                 else
                     once_complete(
                         "failed",
-                        "unable to retrieve response from llm (file: "
-                            .. request.context.tmp_file
-                            .. ")"
+                        "unable to retrieve response from llm"
                     )
                 end
             end)
