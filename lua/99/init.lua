@@ -64,6 +64,8 @@ end
 --- @field debug_log_prefix string?
 --- @field display_errors? boolean
 
+--- unanswered question -- will i need to queue messages one at a time or
+--- just send them all...  So to prepare ill be sending around this state object
 --- @class _99.State
 --- @field model string
 --- @field md_files string[]
