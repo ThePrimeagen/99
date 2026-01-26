@@ -97,6 +97,30 @@ consider the context of the selection and what you are suppose to be implementin
   end,
   -- luacheck: ignore 631
   read_tmp = "never attempt to read TEMP_FILE.  It is purely for output.  Previous contents, which may not exist, can be written over without worry",
+
+  --- @param path string
+  --- @param line_num number
+  --- @param line_text string
+  --- @param user_request string
+  --- @return string
+  refactor = function(path, line_num, line_text, user_request)
+    return string.format(
+      [[Apply this change to the following line of code:
+
+File: %s (line %d)
+```
+%s
+```
+
+User request: %s
+
+Return ONLY the updated line of code, nothing else.]],
+      path,
+      line_num,
+      line_text,
+      user_request
+    )
+  end,
 }
 
 --- @class _99.Prompts

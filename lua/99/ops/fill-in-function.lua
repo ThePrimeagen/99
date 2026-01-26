@@ -7,6 +7,7 @@ local RequestStatus = require("99.ops.request_status")
 local Window = require("99.window")
 local make_clean_up = require("99.ops.clean-up")
 local Agents = require("99.extensions.agents")
+local Observers = require("99.observers")
 
 --- @param context _99.RequestContext
 --- @param res string
@@ -118,6 +119,14 @@ local function fill_in_function(context, opts)
         -- TODO: small status window here
       elseif status == "success" then
         update_file_with_changes(context, response)
+
+        local point = Point.from_mark(context.marks.function_location)
+        Observers.emit_change({
+          context = context,
+          start_line = point.row,
+          operation = Observers.Operation.FILL_IN_FUNCTION,
+          prompt = opts.additional_prompt,
+        })
       end
     end,
     on_stderr = function(line)

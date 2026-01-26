@@ -47,15 +47,18 @@ end
 function TestProvider:resolve(status, result)
   assert(self.request, "you cannot call resolve until make_request is called")
   local obs = self.request.observer
+  local is_cancelled = self.request.request:is_cancelled()
+  -- Clear request BEFORE calling on_complete, so any new request triggered
+  -- by the callback will properly set self.request
+  self.request = nil
   if obs then
     --- to match the behavior expected from the OpenCodeProvider
-    if self.request.request:is_cancelled() then
+    if is_cancelled then
       obs.on_complete("cancelled", result)
     else
       obs.on_complete(status, result)
     end
   end
-  self.request = nil
 end
 
 --- @param line string

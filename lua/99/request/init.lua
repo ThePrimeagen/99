@@ -49,6 +49,13 @@ end
 function Request:cancel()
   self.logger:debug("cancel")
   self.state = "cancelled"
+
+  -- ACP: Cancel session
+  if self._acp_session then
+    self._acp_session:cancel()
+  end
+
+  -- CLI: Kill process
   ---@diagnostic disable-next-line: undefined-field
   if self._proc and self._proc.pid then
     pcall(function()

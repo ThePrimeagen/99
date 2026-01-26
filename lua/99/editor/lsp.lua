@@ -608,6 +608,28 @@ Lsp.stringify_module_exports("99.editor.lsp", function(res)
   print(res)
 end)
 
+--- Get all references to symbol at cursor position
+--- @param bufnr number
+--- @param cb fun(refs: {uri: string, range: LspRange}[])
+function Lsp.get_references(bufnr, cb)
+  local win = vim.api.nvim_get_current_win()
+  local params = vim.lsp.util.make_position_params(win)
+  params.context = { includeDeclaration = true }
+
+  vim.lsp.buf_request(
+    bufnr,
+    "textDocument/references",
+    params,
+    function(err, result)
+      if err or not result then
+        cb({})
+        return
+      end
+      cb(result)
+    end
+  )
+end
+
 return {
   Lsp = Lsp,
 }

@@ -151,7 +151,7 @@ end
 
 --- @return string
 function OpenCodeProvider._get_default_model()
-  return "opencode/claude-sonnet-4-5"
+  return "anthropic/claude-sonnet-4-5"
 end
 
 --- @class ClaudeCodeProvider : _99.Providers.BaseProvider
@@ -201,8 +201,26 @@ function CursorAgentProvider._get_default_model()
   return "sonnet-4.5"
 end
 
+-- ACP Provider (lazy loaded to avoid circular dependencies)
+local ACPProvider = nil
+local function get_acp_provider()
+  if not ACPProvider then
+    ACPProvider = require("99.acp")
+  end
+  return ACPProvider
+end
+
 return {
   OpenCodeProvider = OpenCodeProvider,
   ClaudeCodeProvider = ClaudeCodeProvider,
   CursorAgentProvider = CursorAgentProvider,
+  ACPProvider = setmetatable({}, {
+    __index = function(_, key)
+      return get_acp_provider()[key]
+    end,
+    __call = function(_, ...)
+      return get_acp_provider()(...)
+    end,
+  }),
+  BaseProvider = BaseProvider,
 }
