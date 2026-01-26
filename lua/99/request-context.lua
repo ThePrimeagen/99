@@ -31,6 +31,10 @@ function RequestContext.from_current_buffer(_99, xid)
     file_type = "typescript"
   end
 
+  if file_type == "csharp" or file_type == "cs" then
+    file_type = "c_sharp"
+  end
+
   local mds = {}
   for _, md in ipairs(_99.md_files) do
     table.insert(mds, md)
