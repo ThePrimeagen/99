@@ -251,6 +251,7 @@ local function process_sequential(
           logger:debug("got response for location", "index", index)
         elseif status == "cancelled" then
           logger:debug("refactor was cancelled", "index", index)
+          vim.schedule(clean_up)
           return
         else
           logger:warn(
