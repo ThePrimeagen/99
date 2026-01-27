@@ -761,7 +761,10 @@ describe("refactor", function()
     end)
 
     it("returns false for ClaudeCodeProvider", function()
-      eq("ClaudeCodeProvider", Providers.ClaudeCodeProvider._get_provider_name())
+      eq(
+        "ClaudeCodeProvider",
+        Providers.ClaudeCodeProvider._get_provider_name()
+      )
     end)
 
     it("returns true for ACPTestProvider (simulates ACPProvider)", function()

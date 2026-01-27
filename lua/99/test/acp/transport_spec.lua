@@ -174,7 +174,10 @@ describe("acp/transport", function()
       transport:send(100, { method = "session/prompt" }, observer)
       test_utils.next_frame()
 
-      transport:_handle_response({ id = 2, result = { stopReason = "end_turn" } })
+      transport:_handle_response({
+        id = 2,
+        result = { stopReason = "end_turn" },
+      })
       test_utils.next_frame()
 
       eq("success", result.status)
@@ -232,22 +235,28 @@ describe("acp/transport", function()
   end)
 
   describe("_handle_message routing for agent requests", function()
-    it("routes request (id + method, no result) to _handle_agent_request", function()
-      local called = false
-      transport._handle_agent_request = function()
-        called = true
-      end
+    it(
+      "routes request (id + method, no result) to _handle_agent_request",
+      function()
+        local called = false
+        transport._handle_agent_request = function()
+          called = true
+        end
 
-      transport:_handle_message(
-        '{"id":5,"method":"session/request_permission","params":{}}'
-      )
-      eq(true, called)
-    end)
+        transport:_handle_message(
+          '{"id":5,"method":"session/request_permission","params":{}}'
+        )
+        eq(true, called)
+      end
+    )
   end)
 
   describe("respond", function()
     it("sends JSON-RPC response with result", function()
-      transport:respond(5, { outcome = { outcome = "selected", optionId = "once" } })
+      transport:respond(
+        5,
+        { outcome = { outcome = "selected", optionId = "once" } }
+      )
 
       eq(1, #written)
       local json = written[1]:gsub("\n", "")
@@ -309,24 +318,27 @@ describe("acp/transport", function()
   end)
 
   describe("on_request", function()
-    it("routes agent requests to registered handler instead of default", function()
-      local received = nil
-      transport:on_request(function(request)
-        received = request
-      end)
+    it(
+      "routes agent requests to registered handler instead of default",
+      function()
+        local received = nil
+        transport:on_request(function(request)
+          received = request
+        end)
 
-      transport:_handle_agent_request({
-        id = 15,
-        method = "session/request_permission",
-        params = { sessionId = "sess-2" },
-      })
-      test_utils.next_frame()
+        transport:_handle_agent_request({
+          id = 15,
+          method = "session/request_permission",
+          params = { sessionId = "sess-2" },
+        })
+        test_utils.next_frame()
 
-      eq(15, received.id)
-      eq("session/request_permission", received.method)
-      eq("sess-2", received.params.sessionId)
-      -- Should not have auto-responded since custom handler was set
-      eq(0, #written)
-    end)
+        eq(15, received.id)
+        eq("session/request_permission", received.method)
+        eq("sess-2", received.params.sessionId)
+        -- Should not have auto-responded since custom handler was set
+        eq(0, #written)
+      end
+    )
   end)
 end)

@@ -68,8 +68,10 @@ describe("acp/message", function()
   end)
 
   describe("session_set_model_request", function()
-    local msg =
-      Message.session_set_model_request("session-123", "anthropic/claude-opus-4")
+    local msg = Message.session_set_model_request(
+      "session-123",
+      "anthropic/claude-opus-4"
+    )
 
     it("has method session/set_model", function()
       eq("session/set_model", msg.method)

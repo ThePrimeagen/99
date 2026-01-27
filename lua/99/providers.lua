@@ -128,7 +128,8 @@ function BaseProvider:make_request(query, request, observer)
             if full_stdout and #full_stdout > 0 then
               logger:debug("using stdout as fallback response")
               -- Strip markdown code fences if present
-              local stripped = full_stdout:gsub("^```%w*\n", ""):gsub("\n```%s*$", "")
+              local stripped =
+                full_stdout:gsub("^```%w*\n", ""):gsub("\n```%s*$", "")
               once_complete("success", stripped)
             else
               once_complete(

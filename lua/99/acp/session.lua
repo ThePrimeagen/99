@@ -283,11 +283,7 @@ function ACPSession:handle_update(update)
           if content_item.type == "content" and content_item.content then
             local inner = content_item.content
             if inner.type == "text" and inner.text then
-              self.logger:debug(
-                "Tool content text",
-                "text_length",
-                #inner.text
-              )
+              self.logger:debug("Tool content text", "text_length", #inner.text)
             end
           elseif content_item.type == "diff" then
             self.logger:debug(
