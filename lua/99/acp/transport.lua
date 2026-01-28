@@ -74,6 +74,17 @@ function ACPTransport:cancel_request(internal_request_id)
   self._logger:debug("Request cancelled", "rpc_id", rpc_id)
 end
 
+--- Clean up request ID mapping by rpc_id (called on response/error)
+--- @param rpc_id number
+function ACPTransport:_cleanup_request_id_map(rpc_id)
+  for internal_id, mapped_rpc_id in pairs(self._request_id_map) do
+    if mapped_rpc_id == rpc_id then
+      self._request_id_map[internal_id] = nil
+      break
+    end
+  end
+end
+
 --- Register notification handler
 --- @param handler fun(notification: table)
 function ACPTransport:on_notification(handler)
@@ -204,6 +215,7 @@ function ACPTransport:_handle_response(response)
   end
 
   self._pending_requests[rpc_id] = nil
+  self:_cleanup_request_id_map(rpc_id)
 
   local result = response.result
   self._logger:debug("Response received", "rpc_id", rpc_id, "result", result)
@@ -248,6 +260,7 @@ function ACPTransport:_handle_error(response)
   end
 
   self._pending_requests[rpc_id] = nil
+  self:_cleanup_request_id_map(rpc_id)
 
   vim.schedule(function()
     observer.on_complete("failed", "ACP error: " .. error_msg)
