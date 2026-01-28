@@ -2,6 +2,24 @@ local geo = require("99.geo")
 local Logger = require("99.logger.logger")
 local Range = geo.Range
 
+--- Mapping table for filetype normalization
+--- Keys are raw Neovim filetypes, values are Treesitter-compatible language names
+--- @type table<string, _99.treesitter.Lang>
+local TS_LANG_MAP = {
+    csharp = "c_sharp",
+    cs = "c_sharp",
+}
+
+--- Normalizes a filetype string for Treesitter lookups
+--- Converts Neovim filetypes to the expected Treesitter language names
+---
+--- @alias _99.treesitter.Lang string
+--- @param lang string Raw filetype from Neovim (e.g, "cs", "csharp", "lua")
+--- @return _99.treesitter.Lang Normalized language key for Treesitter
+local function ts_lang(lang)
+    return TS_LANG_MAP[lang] or lang
+end
+
 --- @class _99.treesitter.TSNode
 --- @field start fun(): number
 --- @field end_ fun(): number
@@ -23,8 +41,9 @@ local fn_call_query = "99-fn-call"
 ---@param lang string
 local function tree_root(buffer, lang)
   -- Load the parser and the query.
-  local ok, parser = pcall(vim.treesitter.get_parser, buffer, lang)
-  if not ok then
+  local tslang = ts_lang(lang)
+  local ok, parser = pcall(vim.treesitter.get_parser, buffer, tslang)
+  if not ok or not parser then
     return nil
   end
 
@@ -46,17 +65,17 @@ function M.fn_call(context, cursor)
       "buffer",
       buffer,
       "lang",
-      lang
+      ts_lang(lang)
     )
     return nil
   end
 
-  local ok, query = pcall(vim.treesitter.query.get, lang, fn_call_query)
+  local ok, query = pcall(vim.treesitter.query.get, ts_lang(lang), fn_call_query)
   if not ok or query == nil then
     logger:error(
       "unable to get the fn_call_query",
       "lang",
-      lang,
+      ts_lang(lang),
       "buffer",
       buffer,
       "ok",
@@ -108,7 +127,7 @@ end
 ---@return _99.treesitter.Function
 function Function.from_ts_node(ts_node, cursor, context)
   local ok, query =
-    pcall(vim.treesitter.query.get, context.file_type, function_query)
+    pcall(vim.treesitter.query.get, ts_lang(context.file_type), function_query)
   local logger = context.logger:set_area("Function")
   if not ok or query == nil then
     logger:fatal("not query or not ok")
@@ -154,14 +173,14 @@ function M.containing_function(context, cursor)
     return nil
   end
 
-  local ok, query = pcall(vim.treesitter.query.get, lang, function_query)
+  local ok, query = pcall(vim.treesitter.query.get, ts_lang(lang), function_query)
   if not ok or query == nil then
     logger:debug(
       "LSP: not ok or query",
       "query",
       vim.inspect(query),
       "lang",
-      lang,
+      ts_lang(lang),
       "ok",
       vim.inspect(ok)
     )
@@ -200,7 +219,7 @@ function M.containing_function(context, cursor)
     "INVARIANT: found_range is not nil but found node is"
   )
 
-  ok, query = pcall(vim.treesitter.query.get, lang, function_query)
+  ok, query = pcall(vim.treesitter.query.get, ts_lang(lang), function_query)
   if not ok or query == nil then
     logger:fatal("INVARIANT: found_range ", "range", found_range:to_text())
     return
@@ -222,7 +241,7 @@ function M.imports(buffer)
     return {}
   end
 
-  local ok, query = pcall(vim.treesitter.query.get, lang, imports_query)
+  local ok, query = pcall(vim.treesitter.query.get, ts_lang(lang), imports_query)
 
   if not ok or query == nil then
     Logger:debug(
@@ -230,7 +249,7 @@ function M.imports(buffer)
       "query",
       vim.inspect(query),
       "lang",
-      lang,
+      ts_lang(lang),
       "ok",
       vim.inspect(ok)
     )
