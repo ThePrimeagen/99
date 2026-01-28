@@ -173,6 +173,25 @@ describe("acp/session", function()
       eq(nil, cancel_msg)
     end)
 
+    it("cancel calls observer.on_complete for cleanup", function()
+      local session, _ = create_active_session()
+
+      session:cancel()
+      test_utils.next_frame()
+
+      assert(observer_calls.on_complete, "on_complete should have been called")
+      eq("cancelled", observer_calls.on_complete.status)
+    end)
+
+    it("cancel with skip_on_complete does not call observer", function()
+      local session, _ = create_active_session()
+
+      session:cancel(true) -- skip_on_complete = true
+      test_utils.next_frame()
+
+      eq(nil, observer_calls.on_complete)
+    end)
+
     it("ignores duplicate cancel calls", function()
       local session, _ = create_active_session()
       local msg_count_before = #sent_messages
@@ -607,7 +626,10 @@ describe("acp/session", function()
         end
       end
 
-      assert(prompt_msg, "session/prompt should have been sent after model switch")
+      assert(
+        prompt_msg,
+        "session/prompt should have been sent after model switch"
+      )
       eq("model-switch-session", prompt_msg.params.sessionId)
     end)
 
@@ -644,7 +666,10 @@ describe("acp/session", function()
         end
       end
 
-      assert(prompt_msg, "session/prompt should still be sent after model switch failure")
+      assert(
+        prompt_msg,
+        "session/prompt should still be sent after model switch failure"
+      )
     end)
 
     it("fails when session/prompt fails", function()

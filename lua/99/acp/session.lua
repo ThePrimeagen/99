@@ -50,16 +50,7 @@ function ACPSession.new(
   }, ACPSession)
 
   self.logger:debug("Creating session")
-
-  self.timeout_timer = vim.fn.timer_start(120000, function()
-    if self.state == "creating" or self.state == "active" then
-      self.logger:error("Request timeout")
-      self:cancel()
-      vim.schedule(function()
-        observer.on_complete("failed", "Request timeout after 2 minutes")
-      end)
-    end
-  end)
+  self:_setup_timeout()
 
   local cwd = vim.fn.getcwd()
   local model = request.context.model
@@ -70,39 +61,6 @@ function ACPSession.new(
   local session_new_req_id =
     string.format("session_new_%d", request.context.xid)
 
-  local function send_prompt(session_id)
-    local prompt_msg =
-      Message.session_prompt_request(session_id, query, request.context)
-    local session_prompt_req_id =
-      string.format("session_prompt_%d", request.context.xid)
-
-    local session_prompt_observer = {
-      on_stdout = function() end,
-      on_stderr = function() end,
-      on_complete = function(prompt_status, prompt_response)
-        if prompt_status == "failed" then
-          self.logger:error("session/prompt failed", "error", prompt_response)
-          self:_clear_timeout()
-          observer.on_complete(
-            "failed",
-            "Failed to send prompt: " .. tostring(prompt_response)
-          )
-        else
-          self.logger:debug(
-            "Prompt completed",
-            "session_id",
-            session_id,
-            "stopReason",
-            prompt_response
-          )
-          self:_finalize()
-        end
-      end,
-    }
-
-    transport:send(session_prompt_req_id, prompt_msg, session_prompt_observer)
-  end
-
   local session_new_observer = {
     on_stdout = function() end,
     on_stderr = function() end,
@@ -110,62 +68,13 @@ function ACPSession.new(
       if status == "failed" then
         self.logger:error("session/new failed", "error", response_data)
         self:_clear_timeout()
-        observer.on_complete(
+        self.observer.on_complete(
           "failed",
           "Failed to create session: " .. tostring(response_data)
         )
         return
       end
-
-      local session_id = response_data.sessionId
-      self.session_id = session_id
-      self.state = "active"
-
-      local current_model = response_data.models
-        and response_data.models.currentModelId
-      self.logger:debug(
-        "Session created",
-        "session_id",
-        session_id,
-        "currentModel",
-        current_model
-      )
-
-      if self.on_session_registered then
-        self.on_session_registered(session_id)
-      end
-
-      self:_replay_pending_updates()
-
-      if model and current_model and model ~= current_model then
-        self.logger:debug("Switching model", "from", current_model, "to", model)
-
-        local set_model_msg =
-          Message.session_set_model_request(session_id, model)
-        local set_model_req_id =
-          string.format("session_set_model_%d", request.context.xid)
-
-        local set_model_observer = {
-          on_stdout = function() end,
-          on_stderr = function() end,
-          on_complete = function(set_status, set_response)
-            if set_status == "failed" then
-              self.logger:warn(
-                "Failed to switch model, using default",
-                "error",
-                set_response
-              )
-            else
-              self.logger:debug("Model switched successfully", "model", model)
-            end
-            send_prompt(session_id)
-          end,
-        }
-
-        transport:send(set_model_req_id, set_model_msg, set_model_observer)
-      else
-        send_prompt(session_id)
-      end
+      self:_on_session_created(response_data)
     end,
   }
 
@@ -316,7 +225,11 @@ local function handle_tool_call_update(self, update)
 
   local raw_output = update.rawOutput
   if raw_output and raw_output.output then
-    self.logger:debug("Tool output received", "output_length", #raw_output.output)
+    self.logger:debug(
+      "Tool output received",
+      "output_length",
+      #raw_output.output
+    )
   end
 
   try_capture_from_content_array(self, update)
@@ -347,7 +260,11 @@ local update_handlers = {
     self.logger:debug("Plan update", "entries", update.entries)
   end,
   [UpdateType.AVAILABLE_COMMANDS] = function(self, update)
-    self.logger:debug("Available commands", "commands", update.availableCommands)
+    self.logger:debug(
+      "Available commands",
+      "commands",
+      update.availableCommands
+    )
   end,
   [UpdateType.CURRENT_MODE] = function(self, update)
     self.logger:debug("Mode changed", "currentModeId", update.currentModeId)
@@ -458,7 +375,8 @@ function ACPSession:_finalize()
 end
 
 --- Cancel this session
-function ACPSession:cancel()
+--- @param skip_on_complete boolean|nil If true, don't call observer.on_complete (for timeout handler)
+function ACPSession:cancel(skip_on_complete)
   if self.state == "cancelled" or self.state == "completed" then
     return
   end
@@ -473,6 +391,31 @@ function ACPSession:cancel()
     local cancel_msg = Message.session_cancel_notification(self.session_id)
     self.process:_write_message(cancel_msg)
   end
+
+  -- Notify observer to trigger cleanup (removes session from _active_sessions)
+  -- Skip if caller will handle on_complete (e.g., timeout with custom message)
+  if not skip_on_complete then
+    vim.schedule(function()
+      self.observer.on_complete("cancelled", "")
+    end)
+  end
+end
+
+--- Setup request timeout timer
+function ACPSession:_setup_timeout()
+  local self_ref = self
+  self.timeout_timer = vim.fn.timer_start(120000, function()
+    if self_ref.state == "creating" or self_ref.state == "active" then
+      self_ref.logger:error("Request timeout")
+      self_ref:cancel(true) -- skip_on_complete, we'll call it with "failed"
+      vim.schedule(function()
+        self_ref.observer.on_complete(
+          "failed",
+          "Request timeout after 2 minutes"
+        )
+      end)
+    end
+  end)
 end
 
 --- Clear timeout timer
@@ -481,6 +424,111 @@ function ACPSession:_clear_timeout()
     vim.fn.timer_stop(self.timeout_timer)
     self.timeout_timer = nil
   end
+end
+
+--- Send the prompt to the session
+function ACPSession:_send_prompt()
+  local prompt_msg = Message.session_prompt_request(
+    self.session_id,
+    self.query,
+    self.request.context
+  )
+  local session_prompt_req_id =
+    string.format("session_prompt_%d", self.request.context.xid)
+
+  local self_ref = self
+  local session_prompt_observer = {
+    on_stdout = function() end,
+    on_stderr = function() end,
+    on_complete = function(prompt_status, prompt_response)
+      if prompt_status == "failed" then
+        self_ref.logger:error("session/prompt failed", "error", prompt_response)
+        self_ref:_clear_timeout()
+        self_ref.observer.on_complete(
+          "failed",
+          "Failed to send prompt: " .. tostring(prompt_response)
+        )
+      else
+        self_ref.logger:debug(
+          "Prompt completed",
+          "session_id",
+          self_ref.session_id,
+          "stopReason",
+          prompt_response
+        )
+        self_ref:_finalize()
+      end
+    end,
+  }
+
+  self.transport:send(
+    session_prompt_req_id,
+    prompt_msg,
+    session_prompt_observer
+  )
+end
+
+--- Switch model if server returned a different one, then send prompt
+--- @param current_model string|nil The model the server is currently using
+function ACPSession:_switch_model_if_needed(current_model)
+  local model = self.request.context.model
+
+  if not (model and current_model and model ~= current_model) then
+    self:_send_prompt()
+    return
+  end
+
+  self.logger:debug("Switching model", "from", current_model, "to", model)
+
+  local set_model_msg =
+    Message.session_set_model_request(self.session_id, model)
+  local set_model_req_id =
+    string.format("session_set_model_%d", self.request.context.xid)
+
+  local self_ref = self
+  local set_model_observer = {
+    on_stdout = function() end,
+    on_stderr = function() end,
+    on_complete = function(set_status, set_response)
+      if set_status == "failed" then
+        self_ref.logger:warn(
+          "Failed to switch model, using default",
+          "error",
+          set_response
+        )
+      else
+        self_ref.logger:debug("Model switched successfully", "model", model)
+      end
+      self_ref:_send_prompt()
+    end,
+  }
+
+  self.transport:send(set_model_req_id, set_model_msg, set_model_observer)
+end
+
+--- Handle successful session/new response
+--- @param response_data table Response from session/new
+function ACPSession:_on_session_created(response_data)
+  local session_id = response_data.sessionId
+  self.session_id = session_id
+  self.state = "active"
+
+  local current_model = response_data.models
+    and response_data.models.currentModelId
+  self.logger:debug(
+    "Session created",
+    "session_id",
+    session_id,
+    "currentModel",
+    current_model
+  )
+
+  if self.on_session_registered then
+    self.on_session_registered(session_id)
+  end
+
+  self:_replay_pending_updates()
+  self:_switch_model_if_needed(current_model)
 end
 
 --- Replay any pending updates that were buffered during session creation
