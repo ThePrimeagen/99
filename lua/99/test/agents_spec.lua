@@ -81,7 +81,7 @@ describe("rules: <name>/SKILL.md", function()
     local prompt = "here is a test back-end @front-end and @vim.ls"
     local found = Agents.by_name(rules, prompt)
 
-    eq({"front-end"}, found.names)
+    eq({ "front-end" }, found.names)
     eq(rules.by_name["front-end"], found.rules)
   end)
 end)

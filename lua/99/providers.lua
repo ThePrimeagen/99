@@ -38,12 +38,10 @@ function BaseProvider:_retrieve_response(request)
   end)
 
   if not success then
-    logger:error(
-      "retrieve_results: failed to read file",
+    logger:debug(
+      "retrieve_results: temp file not found, will try stdout fallback",
       "tmp_name",
-      tmp,
-      "error",
-      result
+      tmp
     )
     return false, ""
   end
@@ -69,6 +67,7 @@ function BaseProvider:make_request(query, request, observer)
   local command = self:_build_command(query, request)
   logger:debug("make_request", "command", command)
 
+  local stdout_chunks = {}
   local proc = vim.system(
     command,
     {
@@ -83,6 +82,7 @@ function BaseProvider:make_request(query, request, observer)
           logger:debug("stdout#error", "err", err)
         end
         if not err and data then
+          table.insert(stdout_chunks, data)
           observer.on_stdout(data)
         end
       end),
@@ -117,14 +117,26 @@ function BaseProvider:make_request(query, request, observer)
         )
       else
         vim.schedule(function()
+          local full_stdout = table.concat(stdout_chunks, "")
+          logger:debug("on_complete", "full_stdout", full_stdout)
+
           local ok, res = self:_retrieve_response(request)
-          if ok then
+          if ok and #res > 0 then
             once_complete("success", res)
           else
-            once_complete(
-              "failed",
-              "unable to retrieve response from temp file"
-            )
+            -- Temp file not found or empty, try using stdout as fallback
+            if full_stdout and #full_stdout > 0 then
+              logger:debug("using stdout as fallback response")
+              -- Strip markdown code fences if present
+              local stripped =
+                full_stdout:gsub("^```%w*\n", ""):gsub("\n```%s*$", "")
+              once_complete("success", stripped)
+            else
+              once_complete(
+                "failed",
+                "unable to retrieve response from temp file"
+              )
+            end
           end
         end)
       end
@@ -151,7 +163,7 @@ end
 
 --- @return string
 function OpenCodeProvider._get_default_model()
-  return "opencode/claude-sonnet-4-5"
+  return "anthropic/claude-sonnet-4-5"
 end
 
 --- @class ClaudeCodeProvider : _99.Providers.BaseProvider
@@ -201,8 +213,26 @@ function CursorAgentProvider._get_default_model()
   return "sonnet-4.5"
 end
 
+-- ACP Provider (lazy loaded to avoid circular dependencies)
+local ACPProvider = nil
+local function get_acp_provider()
+  if not ACPProvider then
+    ACPProvider = require("99.acp")
+  end
+  return ACPProvider
+end
+
 return {
   OpenCodeProvider = OpenCodeProvider,
   ClaudeCodeProvider = ClaudeCodeProvider,
   CursorAgentProvider = CursorAgentProvider,
+  ACPProvider = setmetatable({}, {
+    __index = function(_, key)
+      return get_acp_provider()[key]
+    end,
+    __call = function(_, ...)
+      return get_acp_provider()(...)
+    end,
+  }),
+  BaseProvider = BaseProvider,
 }
