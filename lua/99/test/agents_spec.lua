@@ -55,7 +55,7 @@ local function rule_exists(rule_to_find)
 end
 
 describe("rules: <name>/SKILL.md", function()
-  it("generate without cursor", function()
+  it("rules", function()
     local _99 = r({
       "scratch/custom_rules/",
       "scratch/custom_rules_2/",
@@ -71,5 +71,17 @@ describe("rules: <name>/SKILL.md", function()
         rule_exists(rule)
       end
     end
+  end)
+  it("find rules", function()
+    local _99 = r({
+      "scratch/custom_rules/",
+      "scratch/custom_rules_2/",
+    })
+    local rules = Agents.rules(_99)
+    local prompt = "here is a test back-end @front-end and @vim.ls"
+    local found = Agents.by_name(rules, prompt)
+
+    eq({ "front-end" }, found.names)
+    eq(rules.by_name["front-end"], found.rules)
   end)
 end)

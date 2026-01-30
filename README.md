@@ -1,6 +1,15 @@
+# IF YOU ARE HERE FROM THE YT VIDEO
+a few things changed.  completion is a bit different for skills.  i now require `@` to begin with
+... ill try to update as it happens ...
+
+### The Great Twitch Discussion
+I will conduct a stream on Jan 30 at 8am The Lords Time (Montana Time/Mountain Time (same thing))
+we will do an extensive deep dive on 99 and what we think is good and bad.
+
 ## The AI Agent That Neovim Deserves
 This is an example repo where i want to test what i think the ideal AI workflow
 is for people who dont have "skill issues."  This is meant to streamline the requests to AI and limit them it restricted areas.  For more general requests, please just use opencode.  Dont use neovim.
+
 
 ## Warning
 1. Prompts are temporary right now. they could be massively improved
@@ -59,7 +68,7 @@ I make the assumption you are using Lazy
                     --- What autocomplete do you use.  We currently only
                     --- support cmp right now
                     source = "cmp",
-                }
+                },
 
                 --- WARNING: if you change cwd then this is likely broken
                 --- ill likely fix this in a later change
@@ -109,7 +118,7 @@ I make the assumption you are using Lazy
 ## Completion
 When prompting, if you have cmp installed as your autocomplete you can use an autocomplete for rule inclusion in your prompt.
 
-You can also specify a directory for rule inclusion, and this plugin auto looks into `.cursor/rules` unless you override it
+How skill completion and inclusion works is that you start by typing `@`.
 
 ## API
 You can see the full api at [99 API](./lua/99/init.lua)
@@ -131,10 +140,6 @@ function _99.next_request_logs() ... end
 
 ### Dont forget
 If there are secrets or other information in the logs you want to be removed make sure that you delete the `query` printing.  This will likely contain information you may not want to share.
-
-### The Great Twitch Discussion
-I will conduct a stream on Jan 30 at 11am The Lords Time (Montana Time/Mountain Time (same thing))
-we will do an extensive deep dive on 99 and what we think is good and bad.
 
 ### Known usability issues
 * long function definition issues.

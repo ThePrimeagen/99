@@ -108,13 +108,16 @@ function M.by_name(rules, prompt)
   --- @type _99.Agents.Rule[]
   local out_rules = {}
   for word in prompt:gmatch("%S+") do
-    local rules_by_name = rules.by_name[word]
-    if rules_by_name and found[word] == nil then
-      for _, r in ipairs(rules_by_name) do
-        table.insert(out_rules, r)
+    if word:sub(1, 1) == "@" then
+      local w = word:sub(2)
+      local rules_by_name = rules.by_name[w]
+      if rules_by_name and found[w] == nil then
+        for _, r in ipairs(rules_by_name) do
+          table.insert(out_rules, r)
+        end
+        table.insert(names, w)
+        found[w] = true
       end
-      table.insert(names, word)
-      found[word] = true
     end
   end
 

@@ -42,9 +42,12 @@ function CmpSource.get_debug_name()
   return SOURCE
 end
 
--- Trigger characters not specified - completion will trigger based on keyword pattern
 function CmpSource.get_keyword_pattern()
-  return [[\w\+]]
+  return [[@\k\+]]
+end
+
+function CmpSource.get_trigger_characters()
+  return { "@" }
 end
 
 --- @class CompletionItem
@@ -64,7 +67,7 @@ function CmpSource:complete(_, callback)
     table.insert(items, {
       label = item.rule.name,
       insertText = item.rule.name,
-      filterText = item.rule.name,
+      filterText = "@" .. item.rule.name,
       kind = 17, -- file
       documentation = {
         kind = "markdown",
@@ -110,7 +113,6 @@ local function init(_99)
 
   local cmp = require("cmp")
   source = CmpSource.new(_99)
-  print("setting rules", #source.items)
   cmp.register_source(SOURCE, source)
 end
 
