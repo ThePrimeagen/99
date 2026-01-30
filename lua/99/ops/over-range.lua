@@ -4,6 +4,7 @@ local Mark = require("99.ops.marks")
 local geo = require("99.geo")
 local make_clean_up = require("99.ops.clean-up")
 local Agents = require("99.extensions.agents")
+local Observers = require("99.observers")
 
 local Range = geo.Range
 local Point = geo.Point
@@ -92,6 +93,13 @@ local function over_range(context, range, opts)
         table.insert(lines, 1, "")
 
         new_range:replace_text(lines)
+
+        Observers.emit_change({
+          context = context,
+          start_line = new_range.start.row,
+          operation = Observers.Operation.VISUAL,
+          prompt = opts.additional_prompt,
+        })
       end
     end,
     on_stdout = function(line)

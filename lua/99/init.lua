@@ -12,6 +12,7 @@ local Extensions = require("99.extensions")
 local Agents = require("99.extensions.agents")
 local Providers = require("99.providers")
 local time = require("99.time")
+local Observers = require("99.observers")
 
 ---@param path_or_rule string | _99.Agents.Rule
 ---@return _99.Agents.Rule | string
@@ -63,6 +64,7 @@ end
 --- @field languages string[]
 --- @field display_errors boolean
 --- @field auto_add_skills boolean
+--- @field add_to_quickfix boolean
 --- @field provider_override _99.Providers.BaseProvider?
 --- @field __active_requests table<number, _99.ActiveRequest>
 --- @field __view_log_idx number
@@ -72,12 +74,13 @@ end
 --- @return _99.StateProps
 local function create_99_state()
   return {
-    model = "opencode/claude-sonnet-4-5",
+    model = "anthropic/claude-sonnet-4-5",
     md_files = {},
     prompts = require("99.prompt-settings"),
     ai_stdout_rows = 3,
     languages = { "lua", "go", "java", "elixir", "cpp", "ruby" },
     display_errors = false,
+    add_to_quickfix = false,
     provider_override = nil,
     auto_add_skills = false,
     __active_requests = {},
@@ -99,6 +102,7 @@ end
 --- @field debug_log_prefix string?
 --- @field display_errors? boolean
 --- @field auto_add_skills? boolean
+--- @field add_to_quickfix? boolean
 --- @field completion _99.Completion?
 
 --- unanswered question -- will i need to queue messages one at a time or
@@ -113,6 +117,7 @@ end
 --- @field display_errors boolean
 --- @field provider_override _99.Providers.BaseProvider?
 --- @field auto_add_skills boolean
+--- @field add_to_quickfix boolean
 --- @field rules _99.Agents.Rules
 --- @field __active_requests table<number, _99.ActiveRequest>
 --- @field __view_log_idx number
@@ -460,6 +465,12 @@ function _99.setup(opts)
   vim.api.nvim_create_autocmd("VimLeavePre", {
     callback = function()
       _99.stop_all_requests()
+
+      -- Shutdown ACP process if it's running
+      local acp_provider = Providers.ACPProvider
+      if acp_provider and acp_provider._shared_process then
+        acp_provider:shutdown()
+      end
     end,
   })
 
@@ -483,6 +494,14 @@ function _99.setup(opts)
   end
 
   _99_state.display_errors = opts.display_errors or false
+  _99_state.add_to_quickfix = opts.add_to_quickfix or false
+
+  Observers.clear()
+
+  if _99_state.add_to_quickfix then
+    Observers.register_on_change(Observers.add_to_quickfix)
+  end
+
   _99_state:refresh_rules()
   Languages.initialize(_99_state)
   Extensions.init(_99_state)
@@ -493,6 +512,30 @@ end
 function _99.add_md_file(md)
   table.insert(_99_state.md_files, md)
   return _99
+end
+
+--- @param opts? _99.ops.Opts
+function _99.refactor(opts)
+  opts = process_opts(opts)
+  ops.refactor(get_context("refactor"), opts)
+end
+
+--- @param opts? _99.ops.Opts
+function _99.refactor_prompt(opts)
+  opts = process_opts(opts)
+  local context = get_context("refactor")
+
+  Window.capture_input({
+    cb = function(success, response)
+      if success then
+        opts.additional_prompt = response
+        ops.refactor(context, opts)
+      end
+    end,
+    on_load = function()
+      Extensions.setup_buffer(_99_state)
+    end,
+  })
 end
 
 --- @param md string

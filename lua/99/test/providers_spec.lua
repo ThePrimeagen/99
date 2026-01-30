@@ -16,7 +16,7 @@ describe("providers", function()
 
     it("has correct default model", function()
       eq(
-        "opencode/claude-sonnet-4-5",
+        "anthropic/claude-sonnet-4-5",
         Providers.OpenCodeProvider._get_default_model()
       )
     end)
@@ -77,7 +77,7 @@ describe("providers", function()
 
         _99.setup({})
         local state = _99.__get_state()
-        eq("opencode/claude-sonnet-4-5", state.model)
+        eq("anthropic/claude-sonnet-4-5", state.model)
       end
     )
 
