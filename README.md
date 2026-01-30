@@ -69,7 +69,7 @@ I make the assumption you are using Lazy
                     --- What autocomplete do you use.  We currently only
                     --- support cmp right now
                     source = "cmp",
-                }
+                },
 
                 --- WARNING: if you change cwd then this is likely broken
                 --- ill likely fix this in a later change
