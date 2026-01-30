@@ -140,6 +140,10 @@ end
 --- @return self
 function RequestContext:finalize()
   self:_read_md_files()
+  table.insert(
+    self.ai_context,
+    string.format("<Language>%s</Language>", self.file_type)
+  )
   if self.range then
     table.insert(self.ai_context, self._99.prompts.get_file_location(self))
     table.insert(self.ai_context, self._99.prompts.get_range_text(self.range))
