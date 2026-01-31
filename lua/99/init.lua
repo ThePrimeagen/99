@@ -76,7 +76,7 @@ local function create_99_state()
     md_files = {},
     prompts = require("99.prompt-settings"),
     ai_stdout_rows = 3,
-    languages = { "lua", "go", "java", "elixir", "cpp", "ruby" },
+    languages = { "lua", "go", "java", "elixir", "cpp", "ruby", "rust" },
     display_errors = false,
     provider_override = nil,
     auto_add_skills = false,
