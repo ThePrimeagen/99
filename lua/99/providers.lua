@@ -201,8 +201,37 @@ function CursorAgentProvider._get_default_model()
   return "sonnet-4.5"
 end
 
+--- @class KiroProvider : _99.Providers.BaseProvider
+local KiroProvider = setmetatable({}, { __index = BaseProvider })
+
+--- @param query string
+--- @param request _99.Request
+--- @return string[]
+function KiroProvider._build_command(_, query, request)
+  return {
+    "kiro-cli",
+    "chat",
+    "--no-interactive",
+    "--model",
+    request.context.model,
+    "--trust-all-tools",
+    query,
+  }
+end
+
+--- @return string
+function KiroProvider._get_provider_name()
+  return "KiroProvider"
+end
+
+--- @return string
+function KiroProvider._get_default_model()
+  return "claude-sonnet-4.5"
+end
+
 return {
   OpenCodeProvider = OpenCodeProvider,
   ClaudeCodeProvider = ClaudeCodeProvider,
   CursorAgentProvider = CursorAgentProvider,
+  KiroProvider = KiroProvider,
 }
