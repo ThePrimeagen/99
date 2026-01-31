@@ -30,7 +30,7 @@ local all_parsers = {
 }
 
 -- parsers actually required for tests to run
-local required_parsers = { 'lua', 'typescript' }
+local required_parsers = { 'lua', 'typescript', 'python' }
 
 local function missing_parsers(parsers)
   local missing = {}
