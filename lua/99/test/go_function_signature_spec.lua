@@ -9,7 +9,7 @@ describe("go 99-function-signature query", function()
       "package main",
       "",
       "func main() {",
-      "    fmt.Println(\"Hello, world!\")",
+      '    fmt.Println("Hello, world!")',
       "}",
       "",
       "func add(a int, b int) int {",
@@ -36,7 +36,8 @@ describe("go 99-function-signature query", function()
     local tree = parser:parse()[1]
     local root = tree:root()
 
-    local ok, query = pcall(vim.treesitter.query.get, "go", "99-function-signature")
+    local ok, query =
+      pcall(vim.treesitter.query.get, "go", "99-function-signature")
     assert(ok and query, "Failed to load query")
 
     local actual_signatures = {}
@@ -60,4 +61,3 @@ describe("go 99-function-signature query", function()
     eq(expected_signatures, actual_signatures)
   end)
 end)
-
