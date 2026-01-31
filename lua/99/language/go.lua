@@ -1,7 +1,9 @@
 local M = {}
 
-M.names = {}
-
+M.names = {
+  "99-function-signature",
+  "99-struct",
+}
 --- @param item_name string
 --- @return string
 function M.log_item(item_name)
