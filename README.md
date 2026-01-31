@@ -25,6 +25,9 @@ I make the assumption you are using Lazy
 ```lua
 	{
 		"ThePrimeagen/99",
+        dependencies = {
+          'hrsh7th/nvim-cmp',
+        },
 		config = function()
 			local _99 = require("99")
 
