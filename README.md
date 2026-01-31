@@ -173,6 +173,6 @@ incredible
 
 * every now and then the replacement seems to get jacked up and it screws up
 what i am currently editing..  I think it may have something to do with auto-complete
-  * definitely not suure on this one
+  * definitely not sure on this one
 
 * export function ... sometimes gets export as well.  I think the prompt could help prevent this
