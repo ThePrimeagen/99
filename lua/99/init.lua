@@ -444,6 +444,15 @@ function _99.setup(opts)
       custom_rules = {},
     }
   _99_state.completion.custom_rules = _99_state.completion.custom_rules or {}
+
+  if _99_state.completion.source == "cmp" and not pcall(require, "cmp") then
+    vim.notify(
+      "99: completion.source = 'cmp' requires nvim-cmp",
+      vim.log.levels.ERROR
+    )
+    _99_state.completion.source = nil
+  end
+
   _99_state.auto_add_skills = opts.auto_add_skills or false
 
   local crules = _99_state.completion.custom_rules

@@ -3,17 +3,20 @@
 --- @field init fun(_99: _99.State): nil
 --- @field refresh_state fun(_99: _99.State): nil
 
+--- @type _99.Extensions.Source | nil
+local cmp_source = nil
+
 --- @param completion _99.Completion | nil
 --- @return _99.Extensions.Source | nil
 local function get_source(completion)
-  if not completion or not completion.source then
+  if not completion or completion.source ~= "cmp" then
     return
   end
-  local source = completion.source
-  if source == "cmp" then
+   local source = completion.source
+   if source == "cmp" then
     local cmp = require("99.extensions.cmp")
-    return cmp
-  end
+     return cmp
+   end
 end
 
 return {
