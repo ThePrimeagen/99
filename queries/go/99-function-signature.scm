@@ -14,7 +14,7 @@
       type: (_) @return.type
     )*
   )?
-) @function.definition
+) @signature
 
 (method_declaration
   receiver: (parameter_list
@@ -39,7 +39,7 @@
       type: (_) @return.type
     )*
   )?
-) @function.definition
+) @signature
 
 (method_declaration
   receiver: (parameter_list
@@ -65,5 +65,5 @@
       type: (_) @return.type
     )*
   )?
-) @function.definition
+)@signature 
 
