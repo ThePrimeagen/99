@@ -18,7 +18,7 @@ jobs:
       XDG_CACHE_HOME: ${{ github.workspace }}/.xdg/cache
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Install Neovim
       run: |
@@ -43,7 +43,7 @@ jobs:
         sudo mv stylua /usr/local/bin/
 
     - name: Cache Neovim data (tree-sitter)
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: .xdg
         key: ${{ runner.os }}-nvim-${{ env.NVIM_VERSION }}-ts-${{ env.NVIM_TREESITTER_SHA }}
