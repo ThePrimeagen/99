@@ -102,7 +102,8 @@ end
 --- @field completion _99.Completion?
 
 --- unanswered question -- will i need to queue messages one at a time or
---- just send them all...  So to prepare ill be sending around this state object
+--- unanswered question -- will I need to queue messages one at a time or
+--- just send them all...  So to prepare I'll be sending around this state object
 --- @class _99.State
 --- @field completion _99.Completion
 --- @field model string
@@ -133,7 +134,7 @@ end
 --- take a decent amount of time if there are lots of rules.
 ---
 --- Simple perfs:
---- 1. read 4096 bytes at a tiem instead of whole file and parse out lines
+--- 1. read 4096 bytes at a time instead of whole file and parse out lines
 --- 2. don't show the docs
 --- 3. do the operation once at setup instead of every time.
 ---    likely not needed to do this all the time.
@@ -245,7 +246,7 @@ local _99 = {
   FATAL = Level.FATAL,
 }
 
---- you can only set those marks after the visual selection is removed
+--- You can only set those marks after the visual selection is removed
 local function set_selection_marks()
   vim.api.nvim_feedkeys(
     vim.api.nvim_replace_termcodes("<Esc>", true, false, true),
@@ -517,6 +518,13 @@ end
 function _99.__debug()
   Logger:configure({
     path = nil,
+    level = Level.DEBUG,
+  })
+end
+
+_99.Providers = Providers
+
+return _99
     level = Level.DEBUG,
   })
 end
