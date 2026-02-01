@@ -1,3 +1,5 @@
+local Languages = require("99.language")
+
 ---@param buffer number
 ---@return string
 local function get_file_contents(buffer)
@@ -75,19 +77,8 @@ ONLY provide requested changes by writing the change to TEMP_FILE
     )
   end,
   visual_selection = function(range, file_type)
-    local python_context = ""
-    if file_type == "python" then
-      python_context = [[
-
-PYTHON-SPECIFIC:
-- Preserve the exact indentation level of the selection (Python is indentation-sensitive)
-- Look at FILE_CONTAINING_SELECTION to understand if the code is inside a function, class, or at module level
-- Variables inside functions must be lowercase snake_case (e.g., max_value, not MAX_VALUE)
-- Only use UPPER_SNAKE_CASE for module-level constants defined outside functions/classes
-- If fixing a linter warning about magic numbers inside a function, use a lowercase variable name
-- Only output the replacement for the selection, matching its indentation exactly
-]]
-    end
+    -- Get language-specific prompt context dynamically
+    local lang_context = Languages.get_prompt_context(file_type)
 
     return string.format(
       [[
@@ -105,7 +96,7 @@ Consider the context of the selection and what you are supposed to be implementi
 %s
 </FILE_CONTAINING_SELECTION>
 ]],
-      python_context,
+      lang_context,
       range:to_string(),
       range:to_text(),
       get_file_contents(range.buffer)
