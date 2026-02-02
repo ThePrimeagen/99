@@ -64,6 +64,7 @@ end
 --- @field display_errors boolean
 --- @field auto_add_skills boolean
 --- @field provider_override _99.Providers.BaseProvider?
+--- @field provider_extra_args string[]
 --- @field __active_requests table<number, _99.ActiveRequest>
 --- @field __view_log_idx number
 --- @field __request_history _99.RequestEntry[]
@@ -80,6 +81,7 @@ local function create_99_state()
     display_errors = false,
     provider_override = nil,
     auto_add_skills = false,
+    provider_extra_args = {},
     __active_requests = {},
     __view_log_idx = 1,
     __request_history = {},
@@ -100,6 +102,7 @@ end
 --- @field display_errors? boolean
 --- @field auto_add_skills? boolean
 --- @field completion _99.Completion?
+--- @field provider_extra_args string[]?
 
 --- unanswered question -- will i need to queue messages one at a time or
 --- just send them all...  So to prepare ill be sending around this state object
@@ -113,6 +116,7 @@ end
 --- @field display_errors boolean
 --- @field provider_override _99.Providers.BaseProvider?
 --- @field auto_add_skills boolean
+--- @field provider_extra_args string[]
 --- @field rules _99.Agents.Rules
 --- @field __active_requests table<number, _99.ActiveRequest>
 --- @field __view_log_idx number
@@ -483,6 +487,10 @@ function _99.setup(opts)
   end
 
   _99_state.display_errors = opts.display_errors or false
+  if opts.provider_extra_args then
+    assert(type(opts.provider_extra_args) == "table", "opts.provider_extra_args is not a table")
+  end
+  _99_state.provider_extra_args = opts.provider_extra_args or {}
   _99_state:refresh_rules()
   Languages.initialize(_99_state)
   Extensions.init(_99_state)

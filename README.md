@@ -70,6 +70,11 @@ I make the assumption you are using Lazy
                     source = "cmp",
                 },
 
+                --- Extra arguments to pass to the provider CLI
+                --- These are appended to the command before the query
+                --- Example: { "--no-session-persistence" }
+                provider_extra_args = {},
+
                 --- WARNING: if you change cwd then this is likely broken
                 --- ill likely fix this in a later change
                 ---
