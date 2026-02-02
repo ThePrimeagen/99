@@ -16,6 +16,14 @@ local function get_source(completion)
     return cmp
   end
   if source == "blink" then
+    local ok, _ = pcall(require, "blink.compat")
+    if not ok then
+      vim.notify(
+        "[99] blink.compat plugin is required for blink source. Install: { 'saghen/blink.compat', version = '2.*' }",
+        vim.log.levels.ERROR
+      )
+      return
+    end
     return cmp
   end
 end
