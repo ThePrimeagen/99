@@ -129,18 +129,18 @@ Both nvim-cmp and blink.cmp are supported:
 How skill completion and inclusion works is that you start by typing `@`.
 
 ## Mode
-The `mode` option controls how changes are applied:
-- **`"build"`** (default): Changes are applied directly without confirmation
-- **`"plan"`**: Shows a diff preview and asks for confirmation (`y`/`n`) before applying
+The `mode` option controls which OpenCode agent is used:
+- **`"build"`** (default): Full tools enabled, applies changes directly
+- **`"plan"`**: Restricted agent that asks before file edits and bash commands
 
 Example:
 ```lua
 _99.setup({
-  mode = "plan",  -- Show diff and confirm before applying
+  mode = "plan",  -- Use restricted agent for planning/analysis
 })
 ```
 
-## API
+In plan mode, OpenCode will ask for confirmation before making any file changes or running bash commands, making it useful for reviewing suggestions before applying them.
 You can see the full api at [99 API](./lua/99/init.lua)
 
 ## Reporting a bug
