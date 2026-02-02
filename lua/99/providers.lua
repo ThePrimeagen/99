@@ -141,7 +141,8 @@ local OpenCodeProvider = setmetatable({}, { __index = BaseProvider })
 --- @param request _99.Request
 --- @return string[]
 function OpenCodeProvider._build_command(_, query, request)
-  return { "opencode", "run", "-m", request.context.model, query }
+  local agent = request.context.mode or "build"
+  return { "opencode", "run", "-m", request.context.model, "--agent", agent, query }
 end
 
 --- @return string
