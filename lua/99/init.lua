@@ -88,7 +88,7 @@ local function create_99_state()
 end
 
 --- @class _99.Completion
---- @field source "cmp" | nil
+--- @field source "cmp" | "blink" | nil
 --- @field custom_rules string[]
 
 --- @class _99.Options

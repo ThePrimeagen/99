@@ -15,6 +15,9 @@ local function get_source(completion)
   if source == "cmp" then
     return cmp
   end
+  if source == "blink" then
+    return cmp
+  end
 end
 
 return {

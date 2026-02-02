@@ -65,8 +65,8 @@ I make the assumption you are using Lazy
                       "scratch/custom_rules/",
                     },
 
-                    --- What autocomplete do you use.  We currently only
-                    --- support cmp right now
+                    --- What autocomplete do you use. Supports "cmp" (nvim-cmp) or "blink" (blink.cmp)
+                    --- For blink.cmp, you also need blink.compat plugin installed
                     source = "cmp",
                 },
 
@@ -116,7 +116,11 @@ I make the assumption you are using Lazy
 ```
 
 ## Completion
-When prompting, if you have cmp installed as your autocomplete you can use an autocomplete for rule inclusion in your prompt.
+When prompting, you can use autocomplete for rule inclusion in your prompt.
+
+Both nvim-cmp and blink.cmp are supported:
+- **nvim-cmp**: Set `source = "cmp"` in your config
+- **blink.cmp**: Set `source = "blink"` and ensure you have [blink.compat](https://github.com/saghen/blink.compat) installed
 
 How skill completion and inclusion works is that you start by typing `@`.
 
