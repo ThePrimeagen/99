@@ -4,6 +4,7 @@ local Mark = require("99.ops.marks")
 local geo = require("99.geo")
 local make_clean_up = require("99.ops.clean-up")
 local Agents = require("99.extensions.agents")
+local Plan = require("99.ops.plan")
 
 local Range = geo.Range
 local Point = geo.Point
@@ -62,6 +63,37 @@ local function over_range(context, range, opts)
   request:add_prompt_content(full_prompt)
   top_status:start()
   bottom_status:start()
+
+  --- @param new_range Range
+  --- @param new_text string
+  local function apply_changes(new_range, new_text)
+    local lines = vim.split(new_text, "\n")
+    table.insert(lines, 1, "")
+    new_range:replace_text(lines)
+  end
+
+  --- @param new_range Range
+  --- @param new_text string
+  local function handle_success(new_range, new_text)
+    if context._99.mode == "plan" then
+      local new_lines = vim.split(new_text, "\n")
+      local plan = Plan.new(context, new_lines, new_range)
+
+      if plan then
+        Plan.show_and_confirm(plan, function(approved)
+          if approved then
+            Plan.apply(plan)
+            logger:info("Plan approved and applied")
+          else
+            logger:info("Plan rejected")
+          end
+        end)
+      end
+    else
+      apply_changes(new_range, new_text)
+    end
+  end
+
   request:start({
     on_complete = function(status, response)
       vim.schedule(clean_up)
@@ -77,21 +109,13 @@ local function over_range(context, range, opts)
         local valid = top_mark:is_valid() and bottom_mark:is_valid()
         if not valid then
           logger:fatal(
-            -- luacheck: ignore 631
             "the original visual_selection has been destroyed.  You cannot delete the original visual selection during a request"
           )
           return
         end
 
         local new_range = Range.from_marks(top_mark, bottom_mark)
-        local lines = vim.split(response, "\n")
-
-        --- HACK: i am adding a new line here because above range will add a mark to the line above.
-        --- that way this appears to be added to "the same line" as the visual selection was
-        --- originally take from
-        table.insert(lines, 1, "")
-
-        new_range:replace_text(lines)
+        handle_success(new_range, response)
       end
     end,
     on_stdout = function(line)

@@ -70,6 +70,10 @@ I make the assumption you are using Lazy
                     source = "cmp",
                 },
 
+                --- Mode: "build" (default) applies changes directly
+                --- "plan" shows a diff preview and asks for confirmation before applying
+                mode = "build",
+
                 --- WARNING: if you change cwd then this is likely broken
                 --- ill likely fix this in a later change
                 ---
@@ -123,6 +127,18 @@ Both nvim-cmp and blink.cmp are supported:
 - **blink.cmp**: Set `source = "blink"` and ensure you have [blink.compat](https://github.com/saghen/blink.compat) installed
 
 How skill completion and inclusion works is that you start by typing `@`.
+
+## Mode
+The `mode` option controls how changes are applied:
+- **`"build"`** (default): Changes are applied directly without confirmation
+- **`"plan"`**: Shows a diff preview and asks for confirmation (`y`/`n`) before applying
+
+Example:
+```lua
+_99.setup({
+  mode = "plan",  -- Show diff and confirm before applying
+})
+```
 
 ## API
 You can see the full api at [99 API](./lua/99/init.lua)

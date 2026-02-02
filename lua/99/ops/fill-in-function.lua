@@ -1,5 +1,6 @@
 local geo = require("99.geo")
 local Point = geo.Point
+local Range = geo.Range
 local Request = require("99.request")
 local Mark = require("99.ops.marks")
 local editor = require("99.editor")
@@ -7,6 +8,7 @@ local RequestStatus = require("99.ops.request_status")
 local Window = require("99.window")
 local make_clean_up = require("99.ops.clean-up")
 local Agents = require("99.extensions.agents")
+local Plan = require("99.ops.plan")
 
 --- @param context _99.RequestContext
 --- @param res string
@@ -33,9 +35,46 @@ local function update_file_with_changes(context, res)
 
   local lines = vim.split(res, "\n")
 
-  -- lua docs ignore next error, func being tested already in assert
-  -- TODO: fix this?
   func:replace_text(lines)
+end
+
+--- @param context _99.RequestContext
+--- @param res string
+local function handle_success(context, res)
+  local logger = context.logger:set_area("fill_in_function#handle_success")
+
+  if context._99.mode == "plan" then
+    local mark = context.marks.function_location
+    if not mark then
+      logger:error("No function mark found for plan mode")
+      return
+    end
+
+    local func_start = Point.from_mark(mark)
+    local ts = editor.treesitter
+    local func = ts.containing_function(context, func_start)
+
+    if not func then
+      logger:error("Unable to find function for plan mode")
+      return
+    end
+
+    local new_lines = vim.split(res, "\n")
+    local plan = Plan.new(context, new_lines, func.function_range)
+
+    if plan then
+      Plan.show_and_confirm(plan, function(approved)
+        if approved then
+          Plan.apply(plan)
+          logger:info("Plan approved and applied")
+        else
+          logger:info("Plan rejected")
+        end
+      end)
+    end
+  else
+    update_file_with_changes(context, res)
+  end
 end
 
 --- @param context _99.RequestContext
@@ -115,9 +154,8 @@ local function fill_in_function(context, opts)
         )
       elseif status == "cancelled" then
         logger:debug("fill_in_function was cancelled")
-        -- TODO: small status window here
       elseif status == "success" then
-        update_file_with_changes(context, response)
+        handle_success(context, response)
       end
     end,
     on_stderr = function(line)
