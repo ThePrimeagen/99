@@ -29,6 +29,8 @@ function RequestContext.from_current_buffer(_99, xid)
 
   if file_type == "typescriptreact" then
     file_type = "typescript"
+  elseif file_type == "ps1" then
+    file_type = "powershell"
   end
 
   local mds = {}
