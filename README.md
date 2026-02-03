@@ -1,23 +1,23 @@
 # IF YOU ARE HERE FROM THE YT VIDEO
-a few things changed.  completion is a bit different for skills.  i now require `@` to begin with
-... ill try to update as it happens ...
+a few things changed.  Completion is a bit different for skills.  I now require `@` to begin with
+... I'll try to update as it happens ...
 
 ### The Great Twitch Discussion
-I will conduct a stream on Jan 30 at 8am The Lords Time (Montana Time/Mountain Time (same thing))
-we will do an extensive deep dive on 99 and what we think is good and bad.
+I will conduct a stream on Jan 30 at 8am The Lord's Time (Montana Time/Mountain Time (same thing))
+We will do an extensive deep dive on 99 and what we think is good and bad.
 
 ## The AI Agent That Neovim Deserves
-This is an example repo where i want to test what i think the ideal AI workflow
-is for people who dont have "skill issues."  This is meant to streamline the requests to AI and limit them it restricted areas.  For more general requests, please just use opencode.  Dont use neovim.
+This is an example repo where I want to test what I think the ideal AI workflow
+is for people who don't have "skill issues."  This is meant to streamline the requests to AI and limit them to restricted areas.  For more general requests, please just use opencode.  Dont use neovim.
 
 
 ## Warning
-1. Prompts are temporary right now. they could be massively improved
+1. Prompts are temporary right now. They could be massively improved
 2. TS and Lua language support, open to more
 3. Still very alpha, could have severe problems
 
 ## How to use
-**you must have opencode installed and setup**
+**You must have opencode installed and set up**
 
 Add the following configuration to your neovim config
 
@@ -29,7 +29,7 @@ I make the assumption you are using Lazy
 			local _99 = require("99")
 
             -- For logging that is to a file if you wish to trace through requests
-            -- for reporting bugs, i would not rely on this, but instead the provided
+            -- for reporting bugs, I would not rely on this, but instead the provided
             -- logging mechanisms within 99.  This is for more debugging purposes
             local cwd = vim.uv.cwd()
             local basename = vim.fs.basename(cwd)
@@ -43,9 +43,9 @@ I make the assumption you are using Lazy
                 --- A new feature that is centered around tags
                 completion = {
                     --- Defaults to .cursor/rules
-                    -- I am going to disable these until i understand the
+                    -- I am going to disable these until I understand the
                     -- problem better.  Inside of cursor rules there is also
-                    -- application rules, which means i need to apply these
+                    -- application rules, which means I need to apply these
                     -- differently
                     -- cursor_rules = "<custom path to cursor rules>"
 
@@ -65,15 +65,15 @@ I make the assumption you are using Lazy
                       "scratch/custom_rules/",
                     },
 
-                    --- What autocomplete do you use.  We currently only
+                    --- What autocomplete do you use?  We currently only
                     --- support cmp right now
                     source = "cmp",
                 },
 
-                --- WARNING: if you change cwd then this is likely broken
-                --- ill likely fix this in a later change
+                --- WARNING: if you change cwd, then this is likely broken
+                --- I'll likely fix this in a later change
                 ---
-                --- md_files is a list of files to look for and auto add based on the location
+                --- md_files is a list of files to look for and auto-add based on the location
                 --- of the originating request.  That means if you are at /foo/bar/baz.lua
                 --- the system will automagically look for:
                 --- /foo/bar/AGENT.md
@@ -84,22 +84,22 @@ I make the assumption you are using Lazy
 				},
 			})
 
-            -- Create your own short cuts for the different types of actions
+            -- Create your own shortcuts for the different types of actions
 			vim.keymap.set("n", "<leader>9f", function()
 				_99.fill_in_function()
 			end)
-            -- take extra note that i have visual selection only in v mode
-            -- technically whatever your last visual selection is, will be used
-            -- so i have this set to visual mode so i dont screw up and use an
+            -- Take extra note that I have visual selection only in v mode
+            -- technically, whatever your last visual selection is, will be used
+            -- so I have this set to visual mode, so I don't screw up and use an
             -- old visual selection
             --
-            -- likely ill add a mode check and assert on required visual mode
+            -- likely I'll add a mode check and assert on required visual mode
             -- so just prepare for it now
 			vim.keymap.set("v", "<leader>9v", function()
 				_99.visual()
 			end)
 
-            --- if you have a request you dont want to make any changes, just cancel it
+            --- if you have a request, you don't want to make any changes, just cancel it
 			vim.keymap.set("v", "<leader>9s", function()
 				_99.stop_all_requests()
 			end)
@@ -116,9 +116,9 @@ I make the assumption you are using Lazy
 ```
 
 ## Completion
-When prompting, if you have cmp installed as your autocomplete you can use an autocomplete for rule inclusion in your prompt.
+When prompting, if you have cmp installed as your autocomplete, you can use an autocomplete for rule inclusion in your prompt.
 
-How skill completion and inclusion works is that you start by typing `@`.
+How skill completion and inclusion work is that you start by typing `@`.
 
 ## API
 You can see the full api at [99 API](./lua/99/init.lua)
@@ -128,7 +128,7 @@ To report a bug, please provide the full running debug logs.  This may require
 a bit of back and forth.
 
 Please do not request features.  We will hold a public discussion on Twitch about
-features, which will be a much better jumping point then a bunch of requests that i have to close down.  If you do make a feature request ill just shut it down instantly.
+features, which will be a much better jumping point than a bunch of requests that I have to close down.  If you do make a feature request, I'll just shut it down instantly.
 
 ### The logs
 To get the _last_ run's logs execute `:lua require("99").view_logs()`.  If this happens to not be the log, you can navigate the logs with:
@@ -139,7 +139,7 @@ function _99.next_request_logs() ... end
 ```
 
 ### Dont forget
-If there are secrets or other information in the logs you want to be removed make sure that you delete the `query` printing.  This will likely contain information you may not want to share.
+If there are secrets or other information in the logs you want to be removed, make sure that you delete the `query` printing.  This will likely contain information you may not want to share.
 
 ### Known usability issues
 * long function definition issues.
@@ -157,22 +157,22 @@ function display_text(
 }
 ```
 
-Then the virtual text will be displayed one line below "function" instead of first line in body
+Then the virtual text will be displayed one line below "function" instead of the first line in the body
 
-* in lua and likely jsdoc, the replacing function will duplicate comment definitions
+* In Lua and likely jsdoc, the replacing function will duplicate comment definitions
   * this wont happen in languages with types in the syntax
 
-* visual selection sends the whole file.  there is likely a better way to use
-  treesitter to make the selection of the content being sent more sensible.
+* Visual selection sends the whole file.  There is likely a better way to use
+  Treesitter to make the selection of the content being sent more sensible.
 
-* for both fill in function and visual there should be a better way to gather
+* For both the fill-in function and visual, there should be a better way to gather
 context.  I think that treesitter + lsp could be really powerful.  I am going
-to experiment with this more once i get access to the FIM models.  This could
-make the time to completion less than a couple seconds, which would be
+to experiment with this more once I get access to the FIM models.  This could
+make the time to completion less than a couple of seconds, which would be
 incredible
 
-* every now and then the replacement seems to get jacked up and it screws up
-what i am currently editing..  I think it may have something to do with auto-complete
-  * definitely not suure on this one
+* Every now and then, the replacement seems to get jacked up, and it screws up
+what I am currently editing.  I think it may have something to do with auto-complete
+  * definitely not sure on this one
 
-* export function ... sometimes gets export as well.  I think the prompt could help prevent this
+* export function ... sometimes gets exported as well.  I think the prompt could help prevent this
