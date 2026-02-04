@@ -1,3 +1,5 @@
+local cmp = require("99.extensions.cmp")
+
 --- @class _99.Extensions.Source
 --- @field init_for_buffer fun(_99: _99.State): nil
 --- @field init fun(_99: _99.State): nil
