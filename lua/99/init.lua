@@ -340,6 +340,14 @@ function _99.visual_prompt(opts)
   _99.visual(opts)
 end
 
+function _99.fill_in_function()
+  error("function has been removed. Just use visual. I really hate fill in function, sorry :)")
+end
+
+function _99.fill_in_function_prompt()
+  error("function has been removed. Just use visual. I really hate fill in function, sorry :)")
+end
+
 --- @param opts _99.ops.Opts?
 function _99.visual(opts)
   opts = process_opts(opts)
