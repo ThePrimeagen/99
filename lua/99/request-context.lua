@@ -47,7 +47,6 @@ function RequestContext.from_current_buffer(_99, xid)
     logger = Logger:set_id(xid),
     xid = xid,
     model = _99.model,
-    agent = _99.agent,
     marks = {},
   }, RequestContext)
 end

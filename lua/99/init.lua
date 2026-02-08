@@ -57,7 +57,6 @@ end
 
 --- @class _99.StateProps
 --- @field model string
---- @field agent string
 --- @field md_files string[]
 --- @field prompts _99.Prompts
 --- @field ai_stdout_rows number
@@ -74,7 +73,6 @@ end
 local function create_99_state()
   return {
     model = "opencode/claude-sonnet-4-5",
-    agent = "build",
     md_files = {},
     prompts = require("99.prompt-settings"),
     ai_stdout_rows = 3,
@@ -96,7 +94,6 @@ end
 --- @class _99.Options
 --- @field logger _99.Logger.Options?
 --- @field model string?
---- @field agent string?
 --- @field md_files string[]?
 --- @field provider _99.Providers.BaseProvider?
 --- @field debug_log_prefix string?
@@ -476,11 +473,6 @@ function _99.setup(opts)
     if provider._get_default_model then
       _99_state.model = provider._get_default_model()
     end
-  end
-
-  if opts.agent then
-    assert(type(opts.agent) == "string", "opts.agent is not a string")
-    _99_state.agent = opts.agent
   end
 
   if opts.md_files then
