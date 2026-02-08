@@ -1,6 +1,7 @@
 local Logger = require("99.logger.logger")
 local utils = require("99.utils")
 local random_file = utils.random_file
+local imports_context = require("99.context.imports")
 
 --- @class _99.RequestContext
 --- @field md_file_names string[]
@@ -147,6 +148,17 @@ end
 --- @return self
 function RequestContext:finalize()
   self:_read_md_files()
+  table.insert(
+    self.ai_context,
+    string.format("<Language>%s</Language>", self.file_type)
+  )
+
+  -- Add import context for supported languages
+  local import_ctx = imports_context.gather_import_context_sync(self)
+  if import_ctx and import_ctx ~= "" then
+    table.insert(self.ai_context, import_ctx)
+  end
+
   if self.range then
     table.insert(self.ai_context, self._99.prompts.get_file_location(self))
     table.insert(self.ai_context, self._99.prompts.get_range_text(self.range))

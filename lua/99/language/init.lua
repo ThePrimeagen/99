@@ -3,6 +3,8 @@ local Logger = require("99.logger.logger")
 --- @class _99.LanguageOps
 --- @field log_item fun(item_name: string): string
 --- @field names table<string, string>
+--- @field prompt_context? fun(): string
+--- @field is_stdlib? fun(module_name: string): boolean
 
 --- @class _99.Langauges
 --- @field languages table<string, _99.LanguageOps>
@@ -49,6 +51,29 @@ function M.log_item(_, item_name, buffer)
   validate_function(lang.log_item, file_type)
 
   return lang.log_item(item_name)
+end
+
+--- Get language-specific prompt context
+--- @param file_type string
+--- @return string
+function M.get_prompt_context(file_type)
+  local lang = M.languages[file_type]
+  if lang and lang.prompt_context then
+    return lang.prompt_context()
+  end
+  return ""
+end
+
+--- Check if a module is part of the language's standard library
+--- @param file_type string
+--- @param module_name string
+--- @return boolean
+function M.is_stdlib(file_type, module_name)
+  local lang = M.languages[file_type]
+  if lang and lang.is_stdlib then
+    return lang.is_stdlib(module_name)
+  end
+  return false
 end
 
 --[[

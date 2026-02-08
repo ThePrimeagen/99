@@ -1,3 +1,5 @@
+local Languages = require("99.language")
+
 ---@param buffer number
 ---@return string
 local function get_file_contents(buffer)
@@ -13,7 +15,7 @@ end
 --- @field read_tmp fun(): string
 local prompts = {
   role = function()
-    return [[ You are a software engineering assistant mean to create robust and conanical code ]]
+    return [[ You are a software engineering assistant meant to create robust and canonical code following the language's best practices and idioms. ]]
   end,
   semantic_search = function()
     return [[
@@ -77,12 +79,16 @@ ONLY provide requested changes by writing the change to TEMP_FILE
       action
     )
   end,
-  visual_selection = function(range)
+  visual_selection = function(range, file_type)
+    -- Get language-specific prompt context dynamically
+    local lang_context = Languages.get_prompt_context(file_type)
+
     return string.format(
       [[
 You receive a selection in neovim that you need to replace with new code.
 The selection's contents may contain notes, incorporate the notes every time if there are some.
-consider the context of the selection and what you are suppose to be implementing
+Consider the context of the selection and what you are supposed to be implementing.
+%s
 <SELECTION_LOCATION>
 %s
 </SELECTION_LOCATION>
@@ -93,6 +99,7 @@ consider the context of the selection and what you are suppose to be implementin
 %s
 </FILE_CONTAINING_SELECTION>
 ]],
+      lang_context,
       range:to_string(),
       range:to_text(),
       get_file_contents(range.buffer)
