@@ -47,12 +47,6 @@ function BlinkSource:get_completions(ctx, callback)
   })
 end
 
---- @param item table
---- @param callback fun(item: table | nil): nil
-function BlinkSource:resolve(item, callback)
-  callback(item)
-end
-
 --- @type BlinkSource | nil
 local source = nil
 
