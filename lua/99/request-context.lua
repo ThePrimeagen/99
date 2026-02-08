@@ -6,6 +6,7 @@ local random_file = utils.random_file
 --- @field md_file_names string[]
 --- @field ai_context string[]
 --- @field model string
+--- @field provider_extra_args string[]
 --- @field tmp_file string
 --- @field full_path string
 --- @field buffer number
@@ -47,6 +48,7 @@ function RequestContext.from_current_buffer(_99, xid)
     logger = Logger:set_id(xid),
     xid = xid,
     model = _99.model,
+    provider_extra_args = _99.provider_extra_args or {},
     marks = {},
   }, RequestContext)
 end

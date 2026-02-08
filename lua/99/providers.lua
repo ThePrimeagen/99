@@ -141,7 +141,16 @@ local OpenCodeProvider = setmetatable({}, { __index = BaseProvider })
 --- @param request _99.Request
 --- @return string[]
 function OpenCodeProvider._build_command(_, query, request)
-  return { "opencode", "run", "-m", request.context.model, query }
+  return vim.iter({
+    {
+      "opencode",
+      "run",
+      "-m",
+      request.context.model,
+    },
+    request.context.provider_extra_args,
+    { query },
+  }):flatten():totable()
 end
 
 --- @return string
@@ -161,14 +170,17 @@ local ClaudeCodeProvider = setmetatable({}, { __index = BaseProvider })
 --- @param request _99.Request
 --- @return string[]
 function ClaudeCodeProvider._build_command(_, query, request)
-  return {
-    "claude",
-    "--dangerously-skip-permissions",
-    "--model",
-    request.context.model,
-    "--print",
-    query,
-  }
+  return vim.iter({
+    {
+      "claude",
+      "--dangerously-skip-permissions",
+      "--model",
+      request.context.model,
+      "--print",
+    },
+    request.context.provider_extra_args,
+    { query },
+  }):flatten():totable()
 end
 
 --- @return string
@@ -188,7 +200,16 @@ local CursorAgentProvider = setmetatable({}, { __index = BaseProvider })
 --- @param request _99.Request
 --- @return string[]
 function CursorAgentProvider._build_command(_, query, request)
-  return { "cursor-agent", "--model", request.context.model, "--print", query }
+  return vim.iter({
+    {
+      "cursor-agent",
+      "--model",
+      request.context.model,
+      "--print",
+    },
+    request.context.provider_extra_args,
+    { query },
+  }):flatten():totable()
 end
 
 --- @return string
