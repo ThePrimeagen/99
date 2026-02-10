@@ -1041,11 +1041,6 @@ function Lsp._format_exports(
   return table.concat(out, "\n")
 end
 
-local imports = ts.imports(0)
-Lsp.stringify_definition_exports_from_node(0, imports[1], function(s)
-  print("s", s.results)
-end)
-
 return {
   Lsp = Lsp,
 }
