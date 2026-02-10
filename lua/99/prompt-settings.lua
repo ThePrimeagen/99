@@ -13,7 +13,7 @@ end
 --- @field read_tmp fun(): string
 local prompts = {
   role = function()
-    return [[ You are a software engineering assistant mean to create robust and conanical code ]]
+    return [[ You are a software engineering assistant meant to create robust and canonical code ]]
   end,
   semantic_search = function()
     return [[
@@ -82,7 +82,7 @@ ONLY provide requested changes by writing the change to TEMP_FILE
       [[
 You receive a selection in neovim that you need to replace with new code.
 The selection's contents may contain notes, incorporate the notes every time if there are some.
-consider the context of the selection and what you are suppose to be implementing
+consider the context of the selection and what you are supposed to be implementing
 <SELECTION_LOCATION>
 %s
 </SELECTION_LOCATION>

@@ -206,7 +206,7 @@ function M.containing_function(context, cursor)
   end
 
   --- TODO: we need some language specific things here.
-  --- that is because comments above the function needs to considered
+  --- that is because comments above the function need to be considered
   return Function.from_ts_node(found_node, cursor, context)
 end
 
