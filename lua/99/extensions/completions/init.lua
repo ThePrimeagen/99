@@ -76,6 +76,19 @@ function M.get_completions(trigger_char)
   return {}
 end
 
+--- Detect which trigger character is active in the text before the cursor.
+--- @param cursor_before string text before cursor position
+--- @return string | nil trigger the active trigger character, or nil
+function M.detect_trigger(cursor_before)
+  for _, char in ipairs(M.get_trigger_characters()) do
+    local pattern = char:gsub("([%%%^%$%(%)%.%[%]%*%+%-%?])", "%%%1") .. "%S*$"
+    if cursor_before:match(pattern) then
+      return char
+    end
+  end
+  return nil
+end
+
 function M._reset()
   providers = {}
 end

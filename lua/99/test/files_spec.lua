@@ -121,6 +121,61 @@ describe("files", function()
     )
   end)
 
+  it("setup excludes rule dirs from discovered files", function()
+    Files.setup({ enabled = true, exclude = default_exclude }, {
+      "scratch/custom_rules",
+      "./scratch/custom_rules/",
+      "scratch/custom_rules/",
+    })
+    Files.set_project_root(vim.uv.cwd())
+    local files = Files.discover_files()
+
+    for _, f in ipairs(files) do
+      assert.is_nil(
+        f.path:match("^scratch/custom_rules"),
+        "expected rule dir excluded but found: " .. f.path
+      )
+    end
+
+    -- calling setup again should not break exclusion
+    Files.setup({ enabled = true, exclude = default_exclude }, {
+      "scratch/custom_rules",
+      "./scratch/custom_rules/",
+      "scratch/custom_rules/",
+    })
+    files = Files.discover_files()
+
+    for _, f in ipairs(files) do
+      assert.is_nil(
+        f.path:match("^scratch/custom_rules"),
+        "expected rule dir still excluded after second setup: " .. f.path
+      )
+    end
+  end)
+
+  it("setup preserves base excludes across repeated calls", function()
+    -- first call with rule dirs
+    Files.setup(
+      { enabled = true, exclude = { ".git", "node_modules" } },
+      { "scratch/custom_rules" }
+    )
+    Files.set_project_root(vim.uv.cwd())
+
+    -- second call without rule dirs — base excludes must survive
+    Files.setup(
+      { enabled = true, exclude = { ".git", "node_modules" } },
+      {}
+    )
+    local files = Files.discover_files()
+
+    for _, f in ipairs(files) do
+      assert.is_nil(
+        f.path:match("^%.git/"),
+        "expected .git still excluded after re-setup: " .. f.path
+      )
+    end
+  end)
+
   it(
     "completion_provider get_items returns items with correct shape and values",
     function()

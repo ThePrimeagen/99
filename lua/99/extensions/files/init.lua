@@ -25,6 +25,7 @@ local config = {
     ".env.*",
     "node_modules",
     ".git",
+    ".jj",
     "dist",
     "build",
     "*.log",
@@ -33,6 +34,8 @@ local config = {
     ".cursor",
   },
 }
+
+local base_exclude = vim.deepcopy(config.exclude)
 
 --- @param pattern string
 --- @return boolean
@@ -240,16 +243,25 @@ function M.setup(opts, rule_dirs)
     config.max_file_size = opts.max_file_size or config.max_file_size
     config.max_files = opts.max_files or config.max_files
     if opts.exclude then
-      config.exclude = opts.exclude
+      base_exclude = vim.deepcopy(opts.exclude)
     end
   end
 
-  -- Add rule directories to exclude list
+  config.exclude = vim.deepcopy(base_exclude)
+
   if rule_dirs then
+    local seen = {}
+    for _, pattern in ipairs(config.exclude) do
+      seen[pattern] = true
+    end
+
     for _, dir in ipairs(rule_dirs) do
-      -- Normalize the directory path (remove trailing slash, get basename for relative paths)
       local normalized = dir:gsub("/$", ""):gsub("^%./", "")
-      table.insert(config.exclude, normalized)
+
+      if not seen[normalized] then
+        table.insert(config.exclude, normalized)
+        seen[normalized] = true
+      end
     end
   end
 end

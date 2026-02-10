@@ -80,8 +80,9 @@ I make the assumption you are using Lazy
                         -- exclude = { ".env", ".env.*", "node_modules", ".git", ... },
                     },
 
-                    --- What autocomplete do you use.  We currently only
-                    --- support cmp right now
+                    --- What autocomplete do you use.  We support:
+                    --- "cmp" - nvim-cmp
+                    --- "blink" - blink.cmp
                     source = "cmp",
                 },
 
@@ -120,11 +121,12 @@ I make the assumption you are using Lazy
 
 ## Completions
 When prompting, you can reference rules and files to add context to your request.
+Both **nvim-cmp** and **blink.cmp** are supported.
 
 - `#` references rules — type `#` in the prompt to autocomplete rule files from your configured rule directories
 - `@` references files — type `@` to fuzzy-search project files
 
-Referenced content is automatically resolved and injected into the AI context. Requires cmp (`source = "cmp"` in your completion config).
+Referenced content is automatically resolved and injected into the AI context. Set `source = "cmp"` or `source = "blink"` in your completion config.
 
 ## Providers
 99 supports multiple AI CLI backends. Set `provider` in your setup to switch. If you don't set `model`, the provider's default is used.
@@ -140,6 +142,26 @@ _99.setup({
     provider = _99.ClaudeCodeProvider,
     -- model is optional, overrides the provider's default
     model = "claude-sonnet-4-5",
+})
+```
+
+### nvim-cmp
+Set `source = "cmp"` in your completion config (shown in example above).
+
+### blink.cmp
+Set `source = "blink"` in your completion config, then add the 99 source to your blink.cmp setup:
+
+```lua
+require("blink.cmp").setup({
+  sources = {
+    default = { "lsp", "path", "snippets", "buffer", "99" },
+    providers = {
+      ["99"] = {
+        module = "99.extensions.completions.blink",
+        name = "99",
+      },
+    },
+  },
 })
 ```
 
