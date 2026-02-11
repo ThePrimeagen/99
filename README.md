@@ -143,6 +143,44 @@ _99.setup({
 })
 ```
 
+## Extensions
+
+### Telescope Model Selector
+
+If you have [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) installed, you can switch models on the fly via the Telescope picker:
+
+```lua
+vim.keymap.set("n", "<leader>9m", function()
+  require("99.extensions.telescope").select_model()
+end)
+```
+
+The selected model is used for all subsequent requests in the current session.
+
+### Telescope Provider Selector
+
+Switch between providers (OpenCode, Claude, Cursor, Kiro) without restarting Neovim. Switching provider also resets the model to that provider's default.
+
+```lua
+vim.keymap.set("n", "<leader>9p", function()
+  require("99.extensions.telescope").select_provider()
+end)
+```
+
+### fzf-lua
+
+If you use [fzf-lua](https://github.com/ibhagwan/fzf-lua) instead of telescope, the same pickers are available:
+
+```lua
+vim.keymap.set("n", "<leader>9m", function()
+  require("99.extensions.fzf_lua").select_model()
+end)
+
+vim.keymap.set("n", "<leader>9p", function()
+  require("99.extensions.fzf_lua").select_provider()
+end)
+```
+
 ## API
 You can see the full api at [99 API](./lua/99/init.lua)
 
