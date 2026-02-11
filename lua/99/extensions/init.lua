@@ -13,7 +13,33 @@ local function get_source(completion)
   end
   local source = completion.source
   if source == "cmp" then
-    local cmp = require("99.extensions.cmp")
+    local ok, cmp = pcall(require, "99.extensions.cmp")
+    if not ok then
+      vim.notify(
+        '[99] nvim-cmp is not installed. Install hrsh7th/nvim-cmp or use source = "blink"',
+        vim.log.levels.WARN
+      )
+      return
+    end
+    return cmp
+  end
+  if source == "blink" then
+    local ok, _ = pcall(require, "blink.compat")
+    if not ok then
+      vim.notify(
+        "[99] blink.compat is required for blink source. Install: { 'saghen/blink.compat', version = '2.*' }",
+        vim.log.levels.ERROR
+      )
+      return
+    end
+    local cmp_ok, cmp = pcall(require, "99.extensions.cmp")
+    if not cmp_ok then
+      vim.notify(
+        "[99] 99 completion module failed to load",
+        vim.log.levels.ERROR
+      )
+      return
+    end
     return cmp
   end
 end
