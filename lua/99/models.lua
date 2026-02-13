@@ -18,7 +18,7 @@ local M = {}
 --- raw strings pass through unchanged
 --- @param model string | _99.Models.Model
 --- @param provider_name string
---- @return string
+--- @return string?, string?
 function M.resolve(model, provider_name)
   if type(model) == "string" then
     return model
@@ -26,14 +26,14 @@ function M.resolve(model, provider_name)
   local key = provider_keys[provider_name]
   assert(key, "unknown provider: " .. tostring(provider_name))
   local resolved = model[key]
-  assert(
-    resolved,
-    string.format(
-      "model has no mapping for provider %s (key: %s)",
-      provider_name,
-      key
-    )
-  )
+  if not resolved then
+    return nil,
+      string.format(
+        "model has no mapping for provider %s (key: %s)",
+        provider_name,
+        key
+      )
+  end
   return resolved
 end
 

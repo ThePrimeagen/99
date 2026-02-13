@@ -63,10 +63,18 @@ function BaseProvider:make_request(query, request, observer)
   local logger = request.logger:set_area(self:_get_provider_name())
   logger:debug("make_request", "tmp_file", request.context.tmp_file)
 
-  request.context.model =
-    Models.resolve(request.context.model, self:_get_provider_name())
-
   observer = observer or DevNullObserver
+
+  local resolved, err =
+    Models.resolve(request.context.model, self:_get_provider_name())
+  if not resolved then
+    logger:error("make_request", "model resolution failed", err)
+    request.context._99:finish_request(request.context.xid, "failed")
+    observer.on_complete("failed", err)
+    return
+  end
+  request.context.model = resolved
+
   local once_complete = once(function(status, text)
     observer.on_complete(status, text)
   end)
