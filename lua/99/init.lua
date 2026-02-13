@@ -11,6 +11,7 @@ local Point = geo.Point
 local Extensions = require("99.extensions")
 local Agents = require("99.extensions.agents")
 local Providers = require("99.providers")
+local Models = require("99.models")
 local time = require("99.time")
 local Throbber = require("99.ops.throbber")
 
@@ -58,7 +59,7 @@ end
 --- @field name string
 
 --- @class _99.StateProps
---- @field model string
+--- @field model string | _99.Models.Model
 --- @field md_files string[]
 --- @field prompts _99.Prompts
 --- @field ai_stdout_rows number
@@ -75,7 +76,7 @@ end
 --- @return _99.StateProps
 local function create_99_state()
   return {
-    model = "opencode/claude-sonnet-4-5",
+    model = Models.sonnet_4_5,
     md_files = {},
     prompts = require("99.prompt-settings"),
     ai_stdout_rows = 3,
@@ -98,7 +99,7 @@ end
 
 --- @class _99.Options
 --- @field logger _99.Logger.Options?
---- @field model string?
+--- @field model (string | _99.Models.Model)?
 --- @field show_in_flight_requests boolean?
 --- @field md_files string[]?
 --- @field provider _99.Providers.BaseProvider?
@@ -111,7 +112,7 @@ end
 --- just send them all...  So to prepare ill be sending around this state object
 --- @class _99.State
 --- @field completion _99.Completion
---- @field model string
+--- @field model string | _99.Models.Model
 --- @field md_files string[]
 --- @field prompts _99.Prompts
 --- @field ai_stdout_rows number
@@ -546,7 +547,10 @@ function _99.setup(opts)
   Logger:configure(opts.logger)
 
   if opts.model then
-    assert(type(opts.model) == "string", "opts.model is not a string")
+    assert(
+      type(opts.model) == "string" or type(opts.model) == "table",
+      "opts.model must be a string or _99.Models.Model table"
+    )
     _99_state.model = opts.model
   else
     local provider = opts.provider or Providers.OpenCodeProvider
@@ -592,7 +596,7 @@ function _99.rm_md_file(md)
   return _99
 end
 
---- @param model string
+--- @param model string | _99.Models.Model
 --- @return _99
 function _99.set_model(model)
   _99_state.model = model
@@ -606,5 +610,6 @@ function _99.__debug()
   })
 end
 
+_99.Models = Models
 _99.Providers = Providers
 return _99

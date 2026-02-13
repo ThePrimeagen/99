@@ -5,7 +5,7 @@ local random_file = utils.random_file
 --- @class _99.RequestContext
 --- @field md_file_names string[]
 --- @field ai_context string[]
---- @field model string
+--- @field model string | _99.Models.Model
 --- @field tmp_file string
 --- @field full_path string
 --- @field buffer number
