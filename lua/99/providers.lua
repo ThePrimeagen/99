@@ -1,3 +1,5 @@
+local Models = require("99.models")
+
 --- @class _99.Providers.Observer
 --- @field on_stdout fun(line: string): nil
 --- @field on_stderr fun(line: string): nil
@@ -62,6 +64,17 @@ function BaseProvider:make_request(query, request, observer)
   logger:debug("make_request", "tmp_file", request.context.tmp_file)
 
   observer = observer or DevNullObserver
+
+  local resolved, err =
+    Models.resolve(request.context.model, self:_get_provider_name())
+  if not resolved then
+    logger:error("make_request", "model resolution failed", err)
+    request.context._99:finish_request(request.context.xid, "failed")
+    observer.on_complete("failed", err)
+    return
+  end
+  request.context.model = resolved
+
   local once_complete = once(function(status, text)
     observer.on_complete(status, text)
   end)
@@ -157,9 +170,9 @@ function OpenCodeProvider._get_provider_name()
   return "OpenCodeProvider"
 end
 
---- @return string
+--- @return _99.Models.Model
 function OpenCodeProvider._get_default_model()
-  return "opencode/claude-sonnet-4-5"
+  return Models.sonnet_4_5
 end
 
 --- @class ClaudeCodeProvider : _99.Providers.BaseProvider
@@ -184,9 +197,9 @@ function ClaudeCodeProvider._get_provider_name()
   return "ClaudeCodeProvider"
 end
 
---- @return string
+--- @return _99.Models.Model
 function ClaudeCodeProvider._get_default_model()
-  return "claude-sonnet-4-5"
+  return Models.sonnet_4_5
 end
 
 --- @class CursorAgentProvider : _99.Providers.BaseProvider
@@ -204,9 +217,9 @@ function CursorAgentProvider._get_provider_name()
   return "CursorAgentProvider"
 end
 
---- @return string
+--- @return _99.Models.Model
 function CursorAgentProvider._get_default_model()
-  return "sonnet-4.5"
+  return Models.sonnet_4_5
 end
 
 --- @class KiroProvider : _99.Providers.BaseProvider
@@ -232,9 +245,9 @@ function KiroProvider._get_provider_name()
   return "KiroProvider"
 end
 
---- @return string
+--- @return _99.Models.Model
 function KiroProvider._get_default_model()
-  return "claude-sonnet-4.5"
+  return Models.sonnet_4_5
 end
 
 return {

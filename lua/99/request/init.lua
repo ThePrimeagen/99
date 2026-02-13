@@ -4,13 +4,13 @@
 local Providers = require("99.providers")
 
 --- @class _99.Request.Opts
---- @field model string
+--- @field model string | _99.Models.Model
 --- @field tmp_file string
 --- @field provider _99.Providers.BaseProvider?
 --- @field xid number
 
 --- @class _99.Request.Config
---- @field model string
+--- @field model string | _99.Models.Model
 --- @field tmp_file string
 --- @field provider _99.Providers.BaseProvider
 --- @field xid number
