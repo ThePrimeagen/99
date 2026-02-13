@@ -71,6 +71,7 @@ end
 --- @field __view_log_idx number
 --- @field __request_history _99.RequestEntry[]
 --- @field __request_by_id table<number, _99.RequestEntry>
+--- @field tmp_dir string | nil
 
 --- @return _99.StateProps
 local function create_99_state()
@@ -88,6 +89,7 @@ local function create_99_state()
     __view_log_idx = 1,
     __request_history = {},
     __request_by_id = {},
+    tmp_dir = nil,
   }
 end
 
@@ -106,6 +108,7 @@ end
 --- @field display_errors? boolean
 --- @field auto_add_skills? boolean
 --- @field completion _99.Completion?
+--- @field tmp_dir? string
 
 --- unanswered question -- will i need to queue messages one at a time or
 --- just send them all...  So to prepare ill be sending around this state object
@@ -128,6 +131,7 @@ end
 --- @field __request_history _99.RequestEntry[]
 --- @field __request_by_id table<number, _99.RequestEntry>
 --- @field __active_marks _99.Mark[]
+--- @field tmp_dir string | nil
 local _99_State = {}
 _99_State.__index = _99_State
 
@@ -561,6 +565,11 @@ function _99.setup(opts)
       _99.add_md_file(md)
     end
   end
+
+  if opts.tmp_dir then
+    assert(type(opts.tmp_dir) == "string", "opts.tmp_dir must be a string")
+  end
+  _99_state.tmp_dir = opts.tmp_dir
 
   _99_state.display_errors = opts.display_errors or false
   _99_state:refresh_rules()

@@ -36,11 +36,16 @@ function RequestContext.from_current_buffer(_99, xid)
     table.insert(mds, md)
   end
 
+  local tmp_dir = _99.tmp_dir
+  if tmp_dir then
+    tmp_dir = vim.fn.expand(tmp_dir)
+  end
+
   return setmetatable({
     _99 = _99,
     md_file_names = mds,
     ai_context = {},
-    tmp_file = random_file(),
+    tmp_file = random_file(tmp_dir),
     buffer = buffer,
     full_path = full_path,
     file_type = file_type,
