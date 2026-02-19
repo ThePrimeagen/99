@@ -3,7 +3,6 @@
 --- @field on_stderr fun(line: string): nil
 --- @field on_complete fun(status: _99.Request.ResponseState, res: string): nil
 --- @field on_start fun(): nil
-
 --- @param fn fun(...: any): nil
 --- @return fun(...: any): nil
 local function once(fn)
@@ -29,7 +28,6 @@ function BaseProvider:_retrieve_response(request)
   local success, result = pcall(function()
     return vim.fn.readfile(tmp)
   end)
-
   if not success then
     logger:error(
       "retrieve_results: failed to read file",
@@ -40,10 +38,8 @@ function BaseProvider:_retrieve_response(request)
     )
     return false, ""
   end
-
   local str = table.concat(result, "\n")
   logger:debug("retrieve_results", "results", str)
-
   return true, str
 end
 
@@ -52,10 +48,9 @@ end
 --- @param observer _99.Providers.Observer
 function BaseProvider:make_request(query, request, observer)
   observer.on_start()
-
   local logger = request.logger:set_area(self:_get_provider_name())
   logger:debug("make_request", "tmp_file", request.context.tmp_file)
-
+  local stderr_accum = {}
   local once_complete = once(
     --- @param status "success" | "failed" | "cancelled"
     ---@param text string
@@ -64,10 +59,8 @@ function BaseProvider:make_request(query, request, observer)
       observer.on_complete(status, text)
     end
   )
-
   local command = self:_build_command(query, request)
   logger:debug("make_request", "command", command)
-
   local proc = vim.system(
     command,
     {
@@ -95,6 +88,9 @@ function BaseProvider:make_request(query, request, observer)
           logger:debug("stderr#error", "err", err)
         end
         if not err then
+          if data then
+            table.insert(stderr_accum, data)
+          end
           observer.on_stderr(data)
         end
       end),
@@ -106,10 +102,11 @@ function BaseProvider:make_request(query, request, observer)
         return
       end
       if obj.code ~= 0 then
+        local stderr_text = table.concat(stderr_accum, "")
         local str =
-          string.format("process exit code: %d\n%s", obj.code, vim.inspect(obj))
+          string.format("process exit code: %d\n%s\n%s", obj.code, stderr_text, vim.inspect(obj))
         once_complete("failed", str)
-        logger:fatal(
+        logger:error(
           self:_get_provider_name() .. " make_query failed",
           "obj from results",
           obj
@@ -129,7 +126,6 @@ function BaseProvider:make_request(query, request, observer)
       end
     end)
   )
-
   request:_set_process(proc)
 end
 
