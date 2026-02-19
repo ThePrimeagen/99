@@ -82,7 +82,10 @@ function BaseProvider:make_request(query, request, observer)
           logger:debug("stdout#error", "err", err)
         end
         if not err and data then
-          observer.on_stdout(data)
+          local ok, e = pcall(observer.on_stdout, data)
+          if not ok then
+            logger:error("observer.on_stdout error", "err", e)
+          end
         end
       end),
       stderr = vim.schedule_wrap(function(err, data)
@@ -94,8 +97,11 @@ function BaseProvider:make_request(query, request, observer)
         if err and err ~= "" then
           logger:debug("stderr#error", "err", err)
         end
-        if not err then
-          observer.on_stderr(data)
+        if not err and data then
+          local ok, e = pcall(observer.on_stderr, data)
+          if not ok then
+            logger:error("observer.on_stderr error", "err", e)
+          end
         end
       end),
     },
@@ -131,6 +137,25 @@ function BaseProvider:make_request(query, request, observer)
   )
 
   request:_set_process(proc)
+
+  local timeout_ms = request.context._99.request_timeout
+  if timeout_ms and timeout_ms > 0 then
+    vim.defer_fn(function()
+      if
+        request.state ~= "success"
+        and request.state ~= "failed"
+        and request.state ~= "cancelled"
+      then
+        logger:error("request timed out after " .. timeout_ms .. "ms")
+        pcall(function()
+          proc:kill(
+            (vim.uv and vim.uv.constants and vim.uv.constants.SIGTERM) or 15
+          )
+        end)
+        once_complete("failed", "request timed out")
+      end
+    end, timeout_ms)
+  end
 end
 
 --- @class OpenCodeProvider : _99.Providers.BaseProvider

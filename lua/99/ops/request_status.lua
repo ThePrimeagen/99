@@ -83,7 +83,11 @@ function RequestStatus:start()
 
     self.status_line:update()
     if self.mark then
-      self.mark:set_virtual_text(self:get())
+      local ok, _ = pcall(self.mark.set_virtual_text, self.mark, self:get())
+      if not ok then
+        self.running = false
+        return
+      end
     end
     if self.callback then
       self.callback(self:get())
