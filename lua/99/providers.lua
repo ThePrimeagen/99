@@ -345,7 +345,7 @@ function PiAgentProvider.fetch_models(callback)
   vim.system({ "pi", "--list-models" }, { text = true }, function(obj)
     vim.schedule(function()
       if obj.code ~= 0 then
-        callback(nil, "Failed to fetch models from opencode")
+        callback(nil, "Failed to fetch models from pi")
         return
       end
       local models = {}
