@@ -152,6 +152,7 @@ Referenced content is automatically resolved and injected into the AI context. R
 | `ClaudeCodeProvider` | `claude` | `claude-sonnet-4-5` |
 | `CursorAgentProvider` | `cursor-agent` | `sonnet-4.5` |
 | `GeminiCLIProvider` | `gemini` | `auto` |
+| `PiAgentProvider ` | `pi-agent` | `claude-sonnet-4-5` |
 
 ```lua
 _99.setup({

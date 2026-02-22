@@ -87,6 +87,29 @@ describe("providers", function()
     end)
   end)
 
+  describe("PiAgentProvider", function()
+    it("builds correct command with model", function()
+      local request = { model = "anthropic/claude-sonnet-4-5" }
+      local cmd =
+        Providers.PiAgentProvider._build_command(nil, "test query", request)
+      eq({
+        "pi",
+        "-p",
+        "--no-session",
+        "--model",
+        "anthropic/claude-sonnet-4-5",
+        "test query",
+      }, cmd)
+    end)
+
+    it("has correct default model", function()
+      eq(
+        "anthropic/claude-sonnet-4-5",
+        Providers.PiAgentProvider._get_default_model()
+      )
+    end)
+  end)
+
   describe("provider integration", function()
     it("can be set as provider override", function()
       local _99 = require("99")
@@ -150,6 +173,17 @@ describe("providers", function()
       local state = _99.__get_state()
       eq("custom-model", state.model)
     end)
+
+    it(
+      "uses PiAgentProvider default model when provider specified but no model",
+      function()
+        local _99 = require("99")
+
+        _99.setup({ provider = Providers.PiAgentProvider })
+        local state = _99.__get_state()
+        eq("anthropic/claude-sonnet-4-5", state.model)
+      end
+    )
   end)
 
   describe("BaseProvider", function()
@@ -158,6 +192,7 @@ describe("providers", function()
       eq("function", type(Providers.ClaudeCodeProvider.make_request))
       eq("function", type(Providers.CursorAgentProvider.make_request))
       eq("function", type(Providers.GeminiCLIProvider.make_request))
+      eq("function", type(Providers.PiAgentProvider.make_request))
     end)
   end)
 end)
