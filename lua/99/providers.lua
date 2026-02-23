@@ -350,7 +350,7 @@ function PiAgentProvider.fetch_models(callback)
       end
       local models = {}
       for _, line in ipairs(vim.split(obj.stdout, "\n", { trimempty = true })) do
-        -- `pi models` outputs lines like
+        -- `pi --list-models` outputs lines like
         -- provider           model           context  max-out  thinking  images
         -- openai             gpt-5.3-codex   400K     128K     yes       yes
         local parts = vim.split(line, "%s+", { trimempty = true })
