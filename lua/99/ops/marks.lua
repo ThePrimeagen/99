@@ -25,9 +25,13 @@ function Mark.mark_above_range(range)
   if above == line then
     id = vim.api.nvim_buf_set_extmark(buffer, nsid, above, 0, {})
   else
-    local text = vim.api.nvim_buf_get_lines(buffer, above, above + 1, false)[1]
-    local ending = #text
-    id = vim.api.nvim_buf_set_extmark(buffer, nsid, above, ending, {})
+    local lines = vim.api.nvim_buf_get_lines(buffer, above, above + 1, false)
+    local text = lines[1]
+    if text then
+      local ending = #text
+      id = vim.api.nvim_buf_set_extmark(buffer, nsid, above, ending, {})
+    end
+    -- If text is nil, id remains nil and is_valid() will return false
   end
 
   return setmetatable({
@@ -48,6 +52,9 @@ end
 
 --- @return boolean
 function Mark:is_valid()
+  if not self.id then
+    return false
+  end
   local pos =
     vim.api.nvim_buf_get_extmark_by_id(self.buffer, self.nsid, self.id, {})
   return #pos > 0
@@ -121,6 +128,9 @@ end
 
 --- @param lines string[]
 function Mark:set_virtual_text(lines)
+  if not self.id then
+    return
+  end
   local pos = vim.api.nvim_buf_get_extmark_by_id(self.buffer, nsid, self.id, {})
   assert(#pos > 0, "extmark is broken.  it does not exist")
   local row, col = pos[1], pos[2]
@@ -147,6 +157,9 @@ function Mark:set_text_at_mark(text)
 end
 
 function Mark:delete()
+  if not self.id then
+    return
+  end
   vim.api.nvim_buf_del_extmark(self.buffer, nsid, self.id)
 end
 

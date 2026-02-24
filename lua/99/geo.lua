@@ -194,6 +194,9 @@ end
 --- @param mark _99.Mark
 --- @return _99.Point
 function Point.from_mark(mark)
+  if not mark.id then
+    return Point:from_1_based(0, 0)
+  end
   --- buf extmark by id is a 0 based api
   local pos =
     vim.api.nvim_buf_get_extmark_by_id(mark.buffer, mark.nsid, mark.id, {})
