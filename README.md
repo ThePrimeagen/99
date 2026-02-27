@@ -1,7 +1,7 @@
 # 99
 The AI client that Neovim deserves, built by those that still enjoy to code.
 
-## IF YOU ARE HERE FROM [THE YT VIDEO](https://www.youtube.com/watch?v=ws9zR-UzwTE)
+## IF YOU ARE HERE FROM [THE YOUTUBE VIDEO](https://www.youtube.com/watch?v=ws9zR-UzwTE)
 So many things have changed.  So please be careful!
 
 ## WARNING :: API CHANGES RIGHT NOW
