@@ -2,18 +2,6 @@ local pickers_util = require("99.extensions.pickers")
 
 local M = {}
 
---- @param list string[]
---- @param value string
---- @return number
-local function index_of(list, value)
-  for i, item in ipairs(list) do
-    if item == value then
-      return i
-    end
-  end
-  return 1
-end
-
 --- @param provider _99.Providers.BaseProvider?
 function M.select_model(provider)
   local ok, pickers = pcall(require, "telescope.pickers")
@@ -34,7 +22,7 @@ function M.select_model(provider)
     pickers
       .new({}, {
         prompt_title = "99: Select Model (current: " .. current .. ")",
-        default_selection_index = index_of(models, current),
+        default_selection_index = pickers_util.index_of(models, current),
         finder = finders.new_table({ results = models }),
         sorter = conf.generic_sorter({}),
         attach_mappings = function(prompt_bufnr)
@@ -73,7 +61,7 @@ function M.select_provider()
   pickers
     .new({}, {
       prompt_title = "99: Select Provider (current: " .. info.current .. ")",
-      default_selection_index = index_of(info.names, info.current),
+      default_selection_index = pickers_util.index_of(info.names, info.current),
       finder = finders.new_table({ results = info.names }),
       sorter = conf.generic_sorter({}),
       attach_mappings = function(prompt_bufnr)
