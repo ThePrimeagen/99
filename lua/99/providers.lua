@@ -19,9 +19,17 @@ end
 
 --- @class _99.Providers.BaseProvider
 --- @field _build_command fun(self: _99.Providers.BaseProvider, query: string, context: _99.Prompt): string[]
+--- @field _build_stdin fun(self: _99.Providers.BaseProvider, query: string, context: _99.Prompt): string|nil
 --- @field _get_provider_name fun(self: _99.Providers.BaseProvider): string
 --- @field _get_default_model fun(): string
 local BaseProvider = {}
+
+--- @param query string
+--- @param context _99.Prompt
+--- @return string|nil
+function BaseProvider:_build_stdin(_, _)
+  return nil
+end
 
 --- @param callback fun(models: string[]|nil, err: string|nil): nil
 function BaseProvider.fetch_models(callback)
@@ -71,12 +79,14 @@ function BaseProvider:make_request(query, context, observer)
   )
 
   local command = self:_build_command(query, context)
-  logger:debug("make_request", "command", command)
+  local stdin = self:_build_stdin(query, context)
+  logger:debug("make_request", "command", command, "has_stdin", stdin ~= nil)
 
   local proc = vim.system(
     command,
     {
       text = true,
+      stdin = stdin,
       stdout = vim.schedule_wrap(function(err, data)
         logger:debug("stdout", "data", data)
         if context:is_cancelled() then
@@ -144,7 +154,7 @@ local OpenCodeProvider = setmetatable({}, { __index = BaseProvider })
 --- @param query string
 --- @param context _99.Prompt
 --- @return string[]
-function OpenCodeProvider._build_command(_, query, context)
+function OpenCodeProvider._build_command(_, _, context)
   return {
     "opencode",
     "run",
@@ -152,8 +162,13 @@ function OpenCodeProvider._build_command(_, query, context)
     "build",
     "-m",
     context.model,
-    query,
   }
+end
+
+--- @param query string
+--- @return string
+function OpenCodeProvider._build_stdin(_, query, _)
+  return query
 end
 
 --- @return string

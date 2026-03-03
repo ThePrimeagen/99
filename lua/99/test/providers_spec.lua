@@ -15,8 +15,13 @@ describe("providers", function()
         "build",
         "-m",
         "anthropic/claude-sonnet-4-5",
-        "test query",
       }, cmd)
+    end)
+
+    it("passes query via stdin", function()
+      local stdin =
+        Providers.OpenCodeProvider._build_stdin(nil, "test query", nil)
+      eq("test query", stdin)
     end)
 
     it("has correct default model", function()
