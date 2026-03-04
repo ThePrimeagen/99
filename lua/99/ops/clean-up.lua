@@ -24,6 +24,12 @@ M.make_observer = function(context, obs_or_fn)
     end,
     on_complete = function(status, res)
       pcall(obs.on_complete, status, res)
+      if status == "failed" then
+        vim.notify(
+          "99: provider failed\n" .. (res or "unknown error"),
+          vim.log.levels.ERROR
+        )
+      end
       vim.schedule(function()
         context:stop()
         context._99:sync()

@@ -73,6 +73,8 @@ function BaseProvider:make_request(query, context, observer)
   local command = self:_build_command(query, context)
   logger:debug("make_request", "command", command)
 
+  local stderr_chunks = {}
+
   local proc = vim.system(
     command,
     {
@@ -99,7 +101,8 @@ function BaseProvider:make_request(query, context, observer)
         if err and err ~= "" then
           logger:debug("stderr#error", "err", err)
         end
-        if not err then
+        if not err and data then
+          table.insert(stderr_chunks, data)
           observer.on_stderr(data)
         end
       end),
@@ -111,8 +114,12 @@ function BaseProvider:make_request(query, context, observer)
         return
       end
       if obj.code ~= 0 then
-        local str =
-          string.format("process exit code: %d\n%s", obj.code, vim.inspect(obj))
+        local stderr_output = table.concat(stderr_chunks, "")
+        local str = string.format(
+          "process exit code: %d\nstderr: %s",
+          obj.code,
+          stderr_output ~= "" and stderr_output or "(no stderr output)"
+        )
         once_complete("failed", str)
         logger:fatal(
           self:_get_provider_name() .. " make_query failed",
