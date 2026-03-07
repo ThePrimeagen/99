@@ -325,6 +325,33 @@ function GeminiCLIProvider._get_default_model()
   return "auto"
 end
 
+--- @class MistralVibeCLIProvider : _99.Providers.BaseProvider
+local MistralVibeCLIProvider = setmetatable({}, { __index = BaseProvider })
+
+--- @param query string
+--- @param context _99.Prompt
+--- @return string[]
+function MistralVibeCLIProvider._build_command(_, query, context)
+  return {
+    "vibe",
+    "--agent",
+    "auto-approve",
+    "--prompt",
+    query,
+  }
+end
+
+--- @return string
+function MistralVibeCLIProvider._get_provider_name()
+  return "MistralVibeCLIProvider"
+end
+
+--- @return string
+function MistralVibeCLIProvider._get_default_model()
+  -- Non selectable model, auto routing
+  return "auto"
+end
+
 return {
   BaseProvider = BaseProvider,
   OpenCodeProvider = OpenCodeProvider,
@@ -332,4 +359,5 @@ return {
   CursorAgentProvider = CursorAgentProvider,
   KiroProvider = KiroProvider,
   GeminiCLIProvider = GeminiCLIProvider,
+  MistralVibeCLIProvider = MistralVibeCLIProvider,
 }
