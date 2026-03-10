@@ -2,12 +2,12 @@ local M = {}
 
 --- @return _99.Search.Result | nil
 function M.parse_line(line)
-  local filepath, lnum_raw, rest = line:match("^(.-):([^:]+):(.+)$")
+  local filepath, lnum_raw, rest = line:match("^(.*):(%d+):(.+)$")
   if not filepath or not lnum_raw or not rest then
     return nil
   end
 
-  local col_raw, _, notes = rest:match("^([^,]+),([^,]+),?(.*)$")
+  local col_raw, _, notes = rest:match("^(%d+),([^,]+),?(.*)$")
   if not col_raw then
     return nil
   end

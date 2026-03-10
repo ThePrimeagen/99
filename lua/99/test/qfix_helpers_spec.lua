@@ -17,6 +17,18 @@ describe("qfix helpers", function()
     }, parsed)
   end)
 
+  it("parse_line parses Windows drive-letter paths", function()
+    local parsed =
+      QFixHelpers.parse_line("C:\\repo\\lua\\99\\ops\\search.lua:42:7,3,win path")
+
+    eq({
+      filename = "C:\\repo\\lua\\99\\ops\\search.lua",
+      lnum = 42,
+      col = 7,
+      text = "win path",
+    }, parsed)
+  end)
+
   it("parse_line keeps commas in notes text", function()
     local parsed = QFixHelpers.parse_line("file.lua:10:3,1,note,with,commas")
 
