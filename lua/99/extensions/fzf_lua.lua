@@ -44,6 +44,36 @@ function M.select_model(provider)
   end)
 end
 
+function M.select_effort()
+  local ok, fzf = pcall(require, "fzf-lua")
+  if not ok then
+    vim.notify(
+      "99: fzf-lua is required for this extension",
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
+  local info = pickers_util.get_effort_levels()
+  if not info then
+    return
+  end
+
+  local current = info.current or "none"
+
+  fzf.fzf_exec(promote_current(info.levels, current), {
+    prompt = "99: Select Effort (current: " .. current .. ")> ",
+    actions = {
+      ["enter"] = function(selected)
+        if not selected or #selected == 0 then
+          return
+        end
+        pickers_util.on_effort_selected(selected[1])
+      end,
+    },
+  })
+end
+
 function M.select_provider()
   local ok, fzf = pcall(require, "fzf-lua")
   if not ok then
