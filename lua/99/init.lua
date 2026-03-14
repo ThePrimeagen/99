@@ -490,6 +490,48 @@ function _99.get_model()
   return _99_state.model
 end
 
+--- @param level string|nil
+--- @return _99
+function _99.set_effort(level)
+  local provider = _99.get_provider()
+  local valid_levels = provider._get_effort_levels
+    and provider:_get_effort_levels()
+  if not valid_levels then
+    vim.notify(
+      "99: Current provider does not support effort levels",
+      vim.log.levels.WARN
+    )
+    return _99
+  end
+  if level ~= nil then
+    local found = false
+    for _, v in ipairs(valid_levels) do
+      if v == level then
+        found = true
+        break
+      end
+    end
+    if not found then
+      vim.notify(
+        "99: Invalid effort level: "
+          .. tostring(level)
+          .. ". Valid levels: "
+          .. table.concat(valid_levels, ", "),
+        vim.log.levels.ERROR
+      )
+      return _99
+    end
+  end
+  provider.effort = level
+  return _99
+end
+
+--- @return string|nil
+function _99.get_effort()
+  local provider = _99.get_provider()
+  return provider.effort
+end
+
 --- @return _99.Providers.BaseProvider
 function _99.get_provider()
   return _99_state.provider_override or Providers.OpenCodeProvider
