@@ -546,6 +546,8 @@ function M.capture_input(name, opts)
     )
   end
 
+  vim.cmd("startinsert")
+
   return win
 end
 
