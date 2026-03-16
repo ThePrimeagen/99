@@ -76,4 +76,45 @@ function M.on_provider_selected(name, lookup)
   )
 end
 
+--- @param provider _99.Providers.BaseProvider?
+--- @param opts table?
+function M.select_model(provider, opts)
+  if type(provider) == "table" and opts == nil and not is_selectable_provider(provider) then
+    opts = provider
+    provider = nil
+  end
+
+  opts = opts or {}
+  M.get_models(provider, function(models, current)
+    vim.ui.select(models, {
+      prompt = opts.prompt or ("99: Select Model (current: " .. current .. ")"),
+      format_item = opts.format_item,
+      kind = opts.kind or "99.model",
+    }, function(choice)
+      if not choice then
+        return
+      end
+      M.on_model_selected(choice)
+    end)
+  end)
+end
+
+--- @param opts table?
+function M.select_provider(opts)
+  opts = opts or {}
+  local info = M.get_providers()
+
+  vim.ui.select(info.names, {
+    prompt = opts.prompt
+      or ("99: Select Provider (current: " .. info.current .. ")"),
+    format_item = opts.format_item,
+    kind = opts.kind or "99.provider",
+  }, function(choice)
+    if not choice then
+      return
+    end
+    M.on_provider_selected(choice, info.lookup)
+  end)
+end
+
 return M
