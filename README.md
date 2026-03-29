@@ -5,7 +5,7 @@ The AI client that Neovim deserves, built by those that still enjoy to code.
 So many things have changed.  So please be careful!
 
 ## WARNING :: API CHANGES RIGHT NOW
-It will happen that apis will disapear or be changed.  Sorry, this is an BETA product.
+It will happen that apis will disappear or be changed.  Sorry, this is an BETA product.
 
 ## Project Direction
 This repo is meant to be my exploration grounds for using AI mixed with tradcoding.
