@@ -93,7 +93,7 @@ describe("open", function()
 
     select_content(1)
     _99.open()
-    eq(QFixHelpers.create_qfix_entries(s), qfix_items())
+    some_window_has(t)
 
     select_content(2)
     _99.open()
@@ -101,7 +101,7 @@ describe("open", function()
 
     select_content(3)
     _99.open()
-    some_window_has(t)
+    eq(QFixHelpers.create_qfix_entries(s), qfix_items())
   end)
 
   it("views logs for selected request xid", function()

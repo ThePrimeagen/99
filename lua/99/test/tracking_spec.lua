@@ -57,4 +57,23 @@ describe("tracking", function()
 
     Tracking.__config.serialize_count = previous_counts
   end)
+
+  it("successful returns things in reverse order", function()
+    local provider = test_utils.TestProvider.new()
+    _99.setup(test_utils.get_test_setup_options({
+      in_flight_options = { enable = false },
+    }, provider))
+    test_utils.create_file({ "local value = 1" }, "lua", 1, 0)
+
+    run(provider, "search", "success", "first success")
+    run(provider, "search", "failed", "failed request")
+    run(provider, "vibe", "success", "second success")
+    run(provider, "tutorial", "success", "third success")
+
+    local successful = _99.__get_state().tracking:successful()
+    eq(3, #successful)
+    eq("third success", successful[1].user_prompt)
+    eq("second success", successful[2].user_prompt)
+    eq("first success", successful[3].user_prompt)
+  end)
 end)

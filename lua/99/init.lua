@@ -54,6 +54,7 @@ end
 --- @field in_flight_options? _99.StatusWindow.Opts
 --- @field md_files? string[]
 --- @field provider? _99.Providers.BaseProvider
+--- @field provider_extra_args? string[]
 --- @field display_errors? boolean
 --- @field auto_add_skills? boolean
 --- @field completion? _99.Completion
@@ -226,6 +227,9 @@ local _99 = {
 --- @param capture_content string[] | nil
 local function capture_prompt(cb, name, context, opts, capture_content)
   Window.capture_input(name, {
+    keymap = {
+      [":w"] = "submit",
+    },
     content = capture_content,
 
     --- @param ok boolean
@@ -433,6 +437,13 @@ function _99.setup(opts)
     if provider._get_default_model then
       _99_state.model = provider._get_default_model()
     end
+  end
+
+  if opts.provider_extra_args then
+    assert(
+      type(opts.provider_extra_args) == "table",
+      "opts.provider_extra_args must be a table"
+    )
   end
 
   if opts.md_files then

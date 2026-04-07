@@ -2,6 +2,7 @@ local utils = require("99.utils")
 local Agents = require("99.extensions.agents")
 local Extensions = require("99.extensions")
 local Tracking = require("99.state.tracking")
+local Window = require("99.window")
 
 local _99_STATE_FILE = "state"
 local function default_completion()
@@ -29,6 +30,7 @@ end
 --- @field ai_stdout_rows number
 --- @field display_errors boolean
 --- @field provider_override _99.Providers.BaseProvider?
+--- @field provider_extra_args string[]
 --- @field rules _99.Agents.Rules
 --- @field tracking _99.State.Tracking
 --- @field __tmp_dir string | nil
@@ -72,6 +74,7 @@ function State.new(opts)
   local _99_state = setmetatable(props, State) --[[@as _99.State]]
 
   _99_state.provider_override = opts.provider
+  _99_state.provider_extra_args = opts.provider_extra_args or {}
   _99_state.completion = opts.completion or default_completion()
   _99_state.completion.custom_rules = _99_state.completion.custom_rules or {}
   _99_state.completion.files = _99_state.completion.files or {}
@@ -96,6 +99,17 @@ end
 --- @return string
 function State:tmp_dir()
   return get_tmp_dir(self)
+end
+
+--- @return boolean
+function State:active()
+  _ = self
+  if Window.has_active_window() then
+    return true
+  end
+
+  local qf = vim.fn.getqflist({ winid = 0 })
+  return qf.winid ~= 0
 end
 
 --- TODO: This is something to understand.  I bet that this is going to need

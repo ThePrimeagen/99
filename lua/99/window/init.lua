@@ -451,7 +451,8 @@ local function create_window_legend(win, keymap)
   vim.bo[keymap_win.buf_id].modifiable = false
   vim.bo[keymap_win.buf_id].readonly = true
 
-  vim.wo[win.win_id].scrolloff = keyoffset
+  -- one for the border, one for the extra space, and then keymap count
+  vim.wo[win.win_id].scrolloff = keyoffset + 2
 end
 
 --- @param name string
@@ -626,6 +627,20 @@ function M.has_active_status_window()
     end
   end
   return has
+end
+
+--- @return boolean
+function M.has_active_window()
+  for _, w in ipairs(M.active_windows) do
+    if
+      w.type == "capture_input"
+      and win_valid(w.win_id)
+      and buf_valid(w.buf_id)
+    then
+      return true
+    end
+  end
+  return false
 end
 
 function M.refresh_active_windows()

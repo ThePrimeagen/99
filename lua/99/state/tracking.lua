@@ -116,13 +116,14 @@ end
 
 --- @return _99.Prompt[]
 function Tracking:successful()
-  local out = {}
-  for _, r in ipairs(self.history) do
-    if r.state == "success" then
-      table.insert(out, r)
+  local requests = {}
+  for i = #self.history, 1, -1 do
+    local request = self.history[i]
+    if request.state == "success" then
+      table.insert(requests, request)
     end
   end
-  return out
+  return requests
 end
 
 --- @return _99.State.Tracking.Serialized

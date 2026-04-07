@@ -173,6 +173,24 @@ describe("providers", function()
     end)
   end)
 
+  describe("provider_extra_args", function()
+    it("stores provider_extra_args on state", function()
+      local _99 = require("99")
+      _99.setup({
+        provider_extra_args = { "--no-session-persistence" },
+      })
+      local state = _99.__get_state()
+      eq({ "--no-session-persistence" }, state.provider_extra_args)
+    end)
+
+    it("defaults provider_extra_args to empty table", function()
+      local _99 = require("99")
+      _99.setup({})
+      local state = _99.__get_state()
+      eq({}, state.provider_extra_args)
+    end)
+  end)
+
   describe("BaseProvider", function()
     it("all providers have make_request", function()
       eq("function", type(Providers.OpenCodeProvider.make_request))

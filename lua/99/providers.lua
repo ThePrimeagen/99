@@ -71,6 +71,10 @@ function BaseProvider:make_request(query, context, observer)
   )
 
   local command = self:_build_command(query, context)
+  local extra_args = context._99 and context._99.provider_extra_args or {}
+  if #extra_args > 0 then
+    vim.list_extend(command, extra_args)
+  end
   logger:debug("make_request", "command", command)
 
   local proc = vim.system(

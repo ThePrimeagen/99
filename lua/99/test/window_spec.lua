@@ -27,9 +27,8 @@ describe("Window", function()
         ["<CR>"] = "submit",
       },
     })
-
     eq(2, #Window.active_windows)
-    eq(1, vim.wo[win.win_id].scrolloff)
+    eq(3, vim.wo[win.win_id].scrolloff)
 
     local legend = Window.active_windows[2]
     local lines = vim.api.nvim_buf_get_lines(legend.buf_id, 0, -1, false)
