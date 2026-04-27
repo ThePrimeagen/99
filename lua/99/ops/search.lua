@@ -9,11 +9,10 @@ local make_observer = CleanUp.make_observer
 local function create_search_locations(context, response)
   local qf_list = QFixHelpers.create_qfix_entries(response)
   context.logger:set_area("search"):debug("qf_list created", "qf_list", qf_list)
-  context.data = {
-    type = "search",
-    qfix_items = qf_list,
-    response = response,
-  }
+  --- Mutate existing data table to preserve table identity
+  context.data.type = "search"
+  context.data.qfix_items = qf_list
+  context.data.response = response
 
   if #qf_list > 0 then
     require("99").open_qfix_for_request(context)
@@ -53,6 +52,7 @@ local function search(context, opts)
       )
     elseif status == "success" then
       create_search_locations(context, response)
+      context:append_turn(context.user_prompt, response)
       context._99:sync()
     end
   end))

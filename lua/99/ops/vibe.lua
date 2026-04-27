@@ -9,11 +9,10 @@ local make_observer = CleanUp.make_observer
 local function finish_vibe(context, response)
   local qf_list = QFixHelpers.create_qfix_entries(response)
   context.logger:set_area("vibe"):debug("qf_list created", "qf_list", qf_list)
-  context.data = {
-    type = "vibe",
-    qfix_items = qf_list,
-    response = response,
-  }
+  --- Mutate existing data table to preserve table identity
+  context.data.type = "vibe"
+  context.data.qfix_items = qf_list
+  context.data.response = response
 
   if #qf_list > 0 then
     require("99").open_qfix_for_request(context)
@@ -50,15 +49,16 @@ local function vibe(context, opts)
   --- i think an interface, CleanUpI could be something that is worth it :)
   context:start_request(make_observer(context, function(status, response)
     if status == "cancelled" then
-      logger:debug("request cancelled for search")
+      logger:debug("request cancelled for vibe")
     elseif status == "failed" then
       logger:error(
-        "request failed for search",
+        "request failed for vibe",
         "error response",
         response or "no response provided"
       )
     elseif status == "success" then
       finish_vibe(context, response)
+      context:append_turn(context.user_prompt, response)
       context._99:sync()
     end
   end))

@@ -202,6 +202,8 @@ local _99_state
 --- @field visual fun(opts: _99.ops.Opts): _99.TraceID
 --- takes your current selection and sends that along with the prompt provided and replaces
 --- your visual selection with the results
+--- @field continue fun(opts: _99.ops.ContinueOpts?): _99.TraceID | nil
+--- continues a previous successful 99 request by sending prior turns plus a follow-up prompt
 --- @field view_logs fun(): nil
 --- view_logs allows you to select the request you want to see and then you
 --- get to see the logs.
@@ -219,6 +221,19 @@ local _99 = {
   ERROR = Level.ERROR,
   FATAL = Level.FATAL,
 }
+
+--- @param opts _99.ops.Opts
+--- @param response string
+--- @return _99.ops.Opts
+local function apply_captured_prompt_opts(opts, response)
+  local rules_and_names = Agents.by_name(_99_state.rules, response)
+  opts.additional_rules = opts.additional_rules or {}
+  for _, r in ipairs(rules_and_names.rules) do
+    table.insert(opts.additional_rules, r)
+  end
+  opts.additional_prompt = response
+  return opts
+end
 
 --- @param cb fun(context: _99.Prompt, o: _99.ops.Opts?): nil
 --- @param name string
@@ -245,14 +260,38 @@ local function capture_prompt(cb, name, context, opts, capture_content)
       if not ok then
         return
       end
-      local rules_and_names = Agents.by_name(_99_state.rules, response)
-      opts.additional_rules = opts.additional_rules or {}
-      for _, r in ipairs(rules_and_names.rules) do
-        table.insert(opts.additional_rules, r)
-      end
-      opts.additional_prompt = response
+      opts = apply_captured_prompt_opts(opts, response)
       context.user_prompt = response
       cb(context, opts)
+    end,
+    on_load = function()
+      Extensions.setup_buffer(_99_state)
+    end,
+    rules = _99_state.rules,
+  })
+end
+
+--- @param cb fun(o: _99.ops.Opts?): nil
+--- @param name string
+--- @param logger _99.Logger
+--- @param opts _99.ops.Opts
+--- @param capture_content string[] | nil
+local function capture_prompt_opts(cb, name, logger, opts, capture_content)
+  Window.capture_input(name, {
+    keymap = {
+      [":w"] = "submit",
+    },
+    content = capture_content,
+
+    --- @param ok boolean
+    --- @param response string
+    cb = function(ok, response)
+      logger:debug("capture_prompt", "success", ok, "response", response)
+      if not ok then
+        return
+      end
+      opts = apply_captured_prompt_opts(opts, response)
+      cb(opts)
     end,
     on_load = function()
       Extensions.setup_buffer(_99_state)
@@ -312,6 +351,52 @@ function _99.open()
       _99.open_tutorial(r)
     end
   end)
+end
+
+--- @param opts? _99.ops.ContinueOpts
+--- @return _99.TraceID | nil
+function _99.continue(opts)
+  local o = process_opts(opts or {}) --[[@as _99.ops.ContinueOpts]]
+  local source
+
+  if o.last then
+    source = _99_state.tracking:latest_successful(o.type)
+  else
+    local requests = _99_state.tracking:successful()
+    local str_requests = Tracking.to_selectable_list(requests)
+    select_window(str_requests, function(idx)
+      local selected = requests[idx]
+      if not selected then
+        return
+      end
+      if o.additional_prompt then
+        ops.continue_chat.run(_99_state, ops, selected, o)
+      else
+        capture_prompt_opts(function(captured_opts)
+          ops.continue_chat.run(_99_state, ops, selected, captured_opts)
+        end, "Continue", selected.logger, o)
+      end
+    end)
+    return nil
+  end
+
+  if not source then
+    vim.notify(
+      "No successful 99 request found to continue",
+      vim.log.levels.WARN
+    )
+    return nil
+  end
+
+  if o.additional_prompt then
+    return ops.continue_chat.run(_99_state, ops, source, o)
+  end
+
+  capture_prompt_opts(function(captured_opts)
+    ops.continue_chat.run(_99_state, ops, source, captured_opts)
+  end, "Continue", source.logger, o)
+
+  return nil
 end
 
 --- @param opts? _99.ops.Opts

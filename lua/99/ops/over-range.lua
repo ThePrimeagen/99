@@ -88,6 +88,7 @@ local function over_range(context, opts)
         table.insert(lines, 1, "")
 
         new_range:replace_text(lines)
+        context:append_turn(context.user_prompt, response)
         context._99:sync()
       end
     end,

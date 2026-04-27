@@ -165,6 +165,46 @@ Previous contents, which may not exist, can be written over without worry
 After writing TEMP_FILE once you should be done.  Be done and end the session.
 ]]
   end,
+  --- @param operation _99.Prompt.Operation
+  --- @param turns _99.Prompt.Turn[]
+  --- @param follow_up string
+  --- @return string
+  continue_chat = function(operation, turns, follow_up)
+    local lines = {
+      string.format("You are continuing a previous 99.%s request.", operation),
+      "",
+      "Conversation so far:",
+      "",
+    }
+
+    for _, turn in ipairs(turns) do
+      table.insert(lines, "User:")
+      table.insert(lines, turn.user_prompt)
+      table.insert(lines, "")
+      table.insert(lines, "Assistant:")
+      table.insert(lines, turn.response)
+      table.insert(lines, "")
+    end
+
+    table.insert(lines, "New follow-up:")
+    table.insert(lines, follow_up)
+    table.insert(lines, "")
+    table.insert(
+      lines,
+      string.format(
+        "Continue by refining the previous result. Preserve the output format expected by 99.%s.",
+        operation
+      )
+    )
+    table.insert(lines, "")
+    table.insert(
+      lines,
+      "IMPORTANT: Your response MUST be written to TEMP_FILE and not provided conversationally. "
+        .. "Do not output explanatory text; only write the result to TEMP_FILE."
+    )
+
+    return table.concat(lines, "\n")
+  end,
 }
 
 --- @class _99.Prompts

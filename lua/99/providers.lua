@@ -70,6 +70,10 @@ function BaseProvider:make_request(query, context, observer)
     end
   )
 
+  -- Tutorial fallback may need stdout when TEMP_FILE is blank; other operations
+  -- keep streaming stdout to observers without retaining it in memory.
+  local stdout_accumulator = {}
+
   local command = self:_build_command(query, context)
   local extra_args = context._99 and context._99.provider_extra_args or {}
   if #extra_args > 0 then
@@ -91,6 +95,11 @@ function BaseProvider:make_request(query, context, observer)
           logger:debug("stdout#error", "err", err)
         end
         if not err and data then
+          if context.operation == "tutorial" then
+            -- Provider stdout can include progress/logging, so only retain it for
+            -- the tutorial-only fallback path that runs when TEMP_FILE is blank.
+            table.insert(stdout_accumulator, data)
+          end
           observer.on_stdout(data)
         end
       end),
@@ -127,6 +136,23 @@ function BaseProvider:make_request(query, context, observer)
         vim.schedule(function()
           local ok, res = self:_retrieve_response(context)
           if ok then
+            -- For tutorial operation: if temp file is empty but stdout has content, use stdout
+            if
+              vim.trim(res) == ""
+              and context.operation == "tutorial"
+              and #stdout_accumulator > 0
+            then
+              local stdout_content = table.concat(stdout_accumulator)
+              if vim.trim(stdout_content) ~= "" then
+                logger:debug(
+                  "using stdout fallback for empty temp file",
+                  "operation",
+                  context.operation
+                )
+                once_complete("success", stdout_content)
+                return
+              end
+            end
             once_complete("success", res)
           else
             once_complete(

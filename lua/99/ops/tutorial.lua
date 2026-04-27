@@ -48,6 +48,7 @@ local function tutorial(context, opts)
       )
     elseif status == "success" then
       open_tutorial(context, response)
+      context:append_turn(context.user_prompt, response)
       context._99:sync()
     end
   end))

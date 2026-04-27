@@ -28,9 +28,17 @@ local filetype_map = {
 --- @alias _99.Prompt.State "ready" | "requesting" | _99.Prompt.EndingState
 --- @alias _99.Prompt.Cleanup fun(): nil
 
+--- @class _99.Prompt.Turn
+--- @field user_prompt string
+--- @field response string
+
 --- @class _99.Prompt.Serialized
 --- @field data _99.Prompt.Data
 --- @field user_prompt string
+--- @field session_id string
+--- @field turns _99.Prompt.Turn[]
+--- @field started_at number | nil
+--- @field completed_at number | nil
 --- @class _99.Prompt.Data.Search
 --- @field type "search"
 --- @field qfix_items _99.Search.Result[]
@@ -62,6 +70,7 @@ local filetype_map = {
 --- @field state _99.Prompt.State
 --- @field full_path string
 --- @field started_at number
+--- @field completed_at number | nil
 --- @field data _99.Prompt.Data
 --- @field agent_context string[]
 --- @field tmp_file string
@@ -70,6 +79,8 @@ local filetype_map = {
 --- @field xid number
 --- @field clean_ups (fun(): nil)[]
 --- @field _99 _99.State
+--- @field session_id string
+--- @field turns _99.Prompt.Turn[]
 ---@diagnostic disable-next-line: undefined-doc-name
 --- @field _proc vim.SystemObj?
 local Prompt = {}
@@ -100,6 +111,8 @@ local function set_defaults(context, _99)
   context.full_path = full_path
   context.marks = {}
   context.started_at = Time.now()
+  context.session_id = tostring(get_id())
+  context.turns = {}
 end
 
 --- TODO: Work item for "TODO implementation"
@@ -112,18 +125,42 @@ end
 --- @param data _99.Prompt.Serialized
 --- @return _99.Prompt
 function Prompt.deserialize(_99, data)
-  local prompt = setmetatable({
-    _99 = _99,
-    data = data.data,
-    operation = data.data.type,
-    user_prompt = data.user_prompt,
-    started_at = Time.now(),
+  --- Create context and initialize with set_defaults for all runtime fields
+  local context = {}
+  set_defaults(context, _99)
 
-    --- we should only sync successful requests
-    state = "success",
+  local session_id = data.session_id or context.session_id
+  local turns = data.turns
 
-    xid = get_id(),
-  }, Prompt)
+  --- Lazy-normalize old serialized data without turns into a one-turn session
+  if not turns then
+    turns = {}
+    local response = ""
+    if data.data.type == "tutorial" and data.data.tutorial then
+      response = table.concat(data.data.tutorial, "\n")
+    elseif data.data.response then
+      response = data.data.response
+    end
+    table.insert(turns, {
+      user_prompt = data.user_prompt,
+      response = response,
+    })
+  end
+
+  --- Override defaults with deserialized data while preserving runtime fields
+  context.data = data.data
+  context.operation = data.data.type
+  context.user_prompt = data.user_prompt
+  --- Preserve persisted ordering data. Old serialized prompts did not include
+  --- timestamps, so keep the runtime started_at default and leave completed_at
+  --- nil; tracking falls back to started_at when completed_at is unavailable.
+  context.started_at = data.started_at or context.started_at
+  context.completed_at = data.completed_at
+  context.state = "success"
+  context.session_id = session_id
+  context.turns = copy(turns)
+
+  local prompt = setmetatable(context, Prompt)
   assert(prompt:valid(), "prompt is not valid from data")
   return prompt
 end
@@ -134,7 +171,34 @@ function Prompt:serialize()
   return {
     data = self.data,
     user_prompt = self.user_prompt,
+    session_id = self.session_id,
+    turns = copy(self.turns),
+    started_at = self.started_at,
+    completed_at = self.completed_at,
   }
+end
+
+--- @param user_prompt string
+--- @param response string
+function Prompt:append_turn(user_prompt, response)
+  table.insert(self.turns, {
+    user_prompt = user_prompt,
+    response = response,
+  })
+end
+
+--- @param max number
+--- @return _99.Prompt.Turn[]
+function Prompt:recent_turns(max)
+  if max <= 0 then
+    return {}
+  end
+  local result = {}
+  local start_idx = math.max(1, #self.turns - max + 1)
+  for i = start_idx, #self.turns do
+    table.insert(result, copy(self.turns[i]))
+  end
+  return result
 end
 
 --- @param _99 _99.State
@@ -246,6 +310,7 @@ function Prompt:_observer(obs)
       end
     end,
     on_complete = function(status, res)
+      self.completed_at = Time.now()
       self.state = status
       if obs then
         obs.on_complete(status, res)
@@ -323,6 +388,7 @@ function Prompt:cancel()
     return
   end
 
+  self.completed_at = Time.now()
   self.state = "cancelled"
   local proc = self._proc
   ---@diagnostic disable-next-line: undefined-field

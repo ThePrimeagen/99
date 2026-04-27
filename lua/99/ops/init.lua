@@ -1,5 +1,5 @@
 --- @class _99.ops.Opts
---- The options that are used throughout all the interations with 99.  This
+--- The options that are used throughout all the interactions with 99.  This
 --- includes search, visual, and others
 ---
 --- @docs included
@@ -31,9 +31,17 @@
 --- There are no properties yet.  But i would like to tweek some behavior based on opts
 --- @docs included
 
+--- @class _99.ops.ContinueOpts : _99.ops.Opts
+--- Options for continuing a previous 99 request.
+---
+--- @field last? boolean If true, continue the latest successful request
+--- @field type? _99.Prompt.Operation Filter to latest of this type ("vibe", "search", "tutorial", "visual")
+--- @docs included
+
 return {
   search = require("99.ops.search"),
   tutorial = require("99.ops.tutorial"),
   over_range = require("99.ops.over-range"),
   vibe = require("99.ops.vibe"),
+  continue_chat = require("99.ops.continue"),
 }

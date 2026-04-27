@@ -171,26 +171,25 @@ function M.discover_files()
       local full_path = dir .. "/" .. name
       local rel_path = get_relative_path(full_path, root)
 
-      if matches_exclude_pattern(name) or matches_exclude_pattern(rel_path) then
-        goto continue
-      end
+      if
+        not matches_exclude_pattern(name)
+        and not matches_exclude_pattern(rel_path)
+      then
+        if type == "directory" then
+          scan_dir(full_path)
+        elseif type == "file" then
+          table.insert(files, {
+            path = rel_path,
+            name = name,
+            absolute_path = full_path,
+          })
+          count = count + 1
 
-      if type == "directory" then
-        scan_dir(full_path)
-      elseif type == "file" then
-        table.insert(files, {
-          path = rel_path,
-          name = name,
-          absolute_path = full_path,
-        })
-        count = count + 1
-
-        if count >= config.max_files then
-          break
+          if count >= config.max_files then
+            break
+          end
         end
       end
-
-      ::continue::
     end
   end
 
