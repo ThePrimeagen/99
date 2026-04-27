@@ -435,6 +435,7 @@ Referenced content is automatically resolved and injected into the AI context. N
 | `OpenCodeProvider` (default) | `opencode` | `opencode/claude-sonnet-4-5` |
 | `ClaudeCodeProvider` | `claude` | `claude-sonnet-4-5` |
 | `CursorAgentProvider` | `cursor-agent` | `sonnet-4.5` |
+| `KiroProvider` | `kiro-cli` | `claude-sonnet-4-5` |
 | `GeminiCLIProvider` | `gemini` | `auto` |
 | `PiProvider` | `pi` | `claude-sonnet` |
 
