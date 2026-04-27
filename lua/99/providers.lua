@@ -329,6 +329,26 @@ function GeminiCLIProvider._get_default_model()
   return "auto"
 end
 
+--- @class PiProvider : _99.Providers.BaseProvider
+local PiProvider = setmetatable({}, { __index = BaseProvider })
+
+--- @param query string
+--- @param context _99.Prompt
+--- @return string[]
+function PiProvider._build_command(_, query, context)
+  return { "pi", "--model", context.model, "--print", query }
+end
+
+--- @return string
+function PiProvider._get_provider_name()
+  return "PiProvider"
+end
+
+--- @return string
+function PiProvider._get_default_model()
+  return "claude-sonnet"
+end
+
 return {
   BaseProvider = BaseProvider,
   OpenCodeProvider = OpenCodeProvider,
@@ -336,4 +356,5 @@ return {
   CursorAgentProvider = CursorAgentProvider,
   KiroProvider = KiroProvider,
   GeminiCLIProvider = GeminiCLIProvider,
+  PiProvider = PiProvider,
 }

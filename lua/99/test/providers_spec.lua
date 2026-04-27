@@ -87,6 +87,25 @@ describe("providers", function()
     end)
   end)
 
+  describe("PiProvider", function()
+    it("builds correct command with model", function()
+      local request = { model = "claude-sonnet" }
+      local cmd =
+          Providers.PiProvider._build_command(nil, "test query", request)
+      eq({
+        "pi",
+        "--model",
+        "claude-sonnet",
+        "--print",
+        "test query",
+      }, cmd)
+    end)
+
+    it("has correct default model", function()
+      eq("claude-sonnet", Providers.PiProvider._get_default_model())
+    end)
+  end)
+
   describe("provider integration", function()
     it("can be set as provider override", function()
       local _99 = require("99")
@@ -140,6 +159,17 @@ describe("providers", function()
       end
     )
 
+    it(
+      "uses PiProvider default model when provider specified but no model",
+      function()
+        local _99 = require("99")
+
+        _99.setup({ provider = Providers.PiProvider })
+        local state = _99.__get_state()
+        eq("claude-sonnet", state.model)
+      end
+    )
+
     it("uses custom model when both provider and model specified", function()
       local _99 = require("99")
 
@@ -176,6 +206,7 @@ describe("providers", function()
       eq("function", type(Providers.ClaudeCodeProvider.make_request))
       eq("function", type(Providers.CursorAgentProvider.make_request))
       eq("function", type(Providers.GeminiCLIProvider.make_request))
+      eq("function", type(Providers.PiProvider.make_request))
     end)
   end)
 end)
