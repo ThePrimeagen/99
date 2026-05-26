@@ -149,6 +149,24 @@ local OpenCodeProvider = setmetatable({}, { __index = BaseProvider })
 --- @param context _99.Prompt
 --- @return string[]
 function OpenCodeProvider._build_command(_, query, context)
+  local prompt_file = context.tmp_file .. "-prompt"
+  local tmp_file = vim.fn.fnamemodify(context.tmp_file, ":p")
+  local title = "99 " .. vim.fn.fnamemodify(context.tmp_file, ":t")
+  local direct_prompt = string.format(
+    [[You are fulfilling a Neovim plugin request.
+
+Read the attached file for the task and context.
+
+Your required final action:
+Write the final result to this file, overwriting it:
+%s
+
+Do not print the final result in chat or stdout.
+Do not modify any other file.
+When the file has been written, stop.]],
+    tmp_file
+  )
+
   return {
     "opencode",
     "run",
@@ -156,7 +174,12 @@ function OpenCodeProvider._build_command(_, query, context)
     "build",
     "-m",
     context.model,
-    query,
+    "--title",
+    title,
+    "--file",
+    prompt_file,
+    "--",
+    direct_prompt,
   }
 end
 

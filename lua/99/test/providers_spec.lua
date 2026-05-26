@@ -5,7 +5,10 @@ local Providers = require("99.providers")
 describe("providers", function()
   describe("OpenCodeProvider", function()
     it("builds correct command with model", function()
-      local request = { model = "anthropic/claude-sonnet-4-5" }
+      local request = {
+        model = "anthropic/claude-sonnet-4-5",
+        tmp_file = "./tmp/99-test",
+      }
       local cmd =
         Providers.OpenCodeProvider._build_command(nil, "test query", request)
       eq({
@@ -15,7 +18,22 @@ describe("providers", function()
         "build",
         "-m",
         "anthropic/claude-sonnet-4-5",
-        "test query",
+        "--title",
+        "99 99-test",
+        "--file",
+        "./tmp/99-test-prompt",
+        "--",
+        [[You are fulfilling a Neovim plugin request.
+
+Read the attached file for the task and context.
+
+Your required final action:
+Write the final result to this file, overwriting it:
+]] .. vim.fn.fnamemodify("./tmp/99-test", ":p") .. [[
+
+Do not print the final result in chat or stdout.
+Do not modify any other file.
+When the file has been written, stop.]],
       }, cmd)
     end)
 

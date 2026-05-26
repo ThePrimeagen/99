@@ -117,9 +117,10 @@ Always use the temporary file as the place to describe your actions according to
   end,
   output_file = function()
     return [[
-NEVER alter any file other than TEMP_FILE.
-never provide the requested changes as conversational output. Return only the code.
-ONLY provide requested changes by writing the change to TEMP_FILE
+NEVER alter any file other than the exact file path inside <TEMP_FILE>.
+You must overwrite that TEMP_FILE path with the final answer using a file-write or file-edit operation.
+Do not print the answer as conversational output or stdout.
+After the write succeeds, stop immediately.
 ]]
   end,
   --- @param prompt string
@@ -181,7 +182,10 @@ local prompt_settings = {
   --- @param tmp_file string
   --- @return string
   tmp_file_location = function(tmp_file)
-    return string.format("<TEMP_FILE>%s</TEMP_FILE>", tmp_file)
+    return string.format(
+      "<TEMP_FILE>%s</TEMP_FILE>",
+      vim.fn.fnamemodify(tmp_file, ":p")
+    )
   end,
 
   --- @return string
