@@ -19,6 +19,7 @@ end
 
 --- @class _99.Providers.BaseProvider
 --- @field _build_command fun(self: _99.Providers.BaseProvider, query: string, context: _99.Prompt): string[]
+--- @field _build_env? fun(self: _99.Providers.BaseProvider, context: _99.Prompt): table<string, string>
 --- @field _get_provider_name fun(self: _99.Providers.BaseProvider): string
 --- @field _get_default_model fun(): string
 local BaseProvider = {}
@@ -77,37 +78,46 @@ function BaseProvider:make_request(query, context, observer)
   end
   logger:debug("make_request", "command", command)
 
+  local opts = {
+    text = true,
+    stdout = vim.schedule_wrap(function(err, data)
+      logger:debug("stdout", "data", data)
+      if context:is_cancelled() then
+        once_complete("cancelled", "")
+        return
+      end
+      if err and err ~= "" then
+        logger:debug("stdout#error", "err", err)
+      end
+      if not err and data then
+        observer.on_stdout(data)
+      end
+    end),
+    stderr = vim.schedule_wrap(function(err, data)
+      logger:debug("stderr", "data", data)
+      if context:is_cancelled() then
+        once_complete("cancelled", "")
+        return
+      end
+      if err and err ~= "" then
+        logger:debug("stderr#error", "err", err)
+      end
+      if not err then
+        observer.on_stderr(data)
+      end
+    end),
+  }
+
+  if self._build_env then
+    -- OpenCode reads OPENCODE_CONFIG_CONTENT as an inline config overlay.
+    -- Docs: https://opencode.ai/docs/cli/#environment-variables
+    opts.env =
+      vim.tbl_extend("force", vim.fn.environ(), self:_build_env(context))
+  end
+
   local proc = vim.system(
     command,
-    {
-      text = true,
-      stdout = vim.schedule_wrap(function(err, data)
-        logger:debug("stdout", "data", data)
-        if context:is_cancelled() then
-          once_complete("cancelled", "")
-          return
-        end
-        if err and err ~= "" then
-          logger:debug("stdout#error", "err", err)
-        end
-        if not err and data then
-          observer.on_stdout(data)
-        end
-      end),
-      stderr = vim.schedule_wrap(function(err, data)
-        logger:debug("stderr", "data", data)
-        if context:is_cancelled() then
-          once_complete("cancelled", "")
-          return
-        end
-        if err and err ~= "" then
-          logger:debug("stderr#error", "err", err)
-        end
-        if not err then
-          observer.on_stderr(data)
-        end
-      end),
-    },
+    opts,
     vim.schedule_wrap(function(obj)
       if context:is_cancelled() then
         once_complete("cancelled", "")
@@ -145,25 +155,53 @@ end
 --- @class OpenCodeProvider : _99.Providers.BaseProvider
 local OpenCodeProvider = setmetatable({}, { __index = BaseProvider })
 
+--- @param context _99.Prompt
+--- @return table<string, string>
+function OpenCodeProvider._build_env(_, context)
+  local tmp_file = vim.fn.fnamemodify(context.tmp_file, ":p")
+  local relative_tmp_file = context.tmp_file:gsub("^%./", "")
+  -- Permission patterns use wildcards and the last matching rule wins.
+  -- Docs: https://opencode.ai/docs/permissions/#granular-rules-object-syntax
+  local tmp_file_pattern = "*" .. tmp_file .. "*"
+  local relative_tmp_file_pattern = "*" .. relative_tmp_file .. "*"
+  local permissions = {
+    permission = {
+      edit = {
+        ["*"] = "deny",
+        [relative_tmp_file_pattern] = "allow",
+        [tmp_file_pattern] = "allow",
+      },
+      external_directory = {
+        [tmp_file_pattern] = "allow",
+      },
+      bash = "deny",
+      task = "deny",
+    },
+  }
+
+  return {
+    OPENCODE_CONFIG_CONTENT = vim.json.encode(permissions),
+  }
+end
+
 --- @param query string
 --- @param context _99.Prompt
 --- @return string[]
 function OpenCodeProvider._build_command(_, query, context)
-  local prompt_file = context.tmp_file .. "-prompt"
   local tmp_file = vim.fn.fnamemodify(context.tmp_file, ":p")
   local title = "99 " .. vim.fn.fnamemodify(context.tmp_file, ":t")
   local direct_prompt = string.format(
-    [[You are fulfilling a Neovim plugin request.
+    [[You are fulfilling a Neovim plugin request. Follow these instructions directly.
 
-Read the attached file for the task and context.
-
-Your required final action:
-Write the final result to this file, overwriting it:
+Task and output-format instructions:
 %s
 
-Do not print the final result in chat or stdout.
-Do not modify any other file.
-When the file has been written, stop.]],
+Required final action:
+Use the patch or edit tool to overwrite this file with the final result:
+%s
+
+Do not answer in chat or stdout. The result is only complete when the file has been written.]],
+    query,
     tmp_file
   )
 
@@ -176,8 +214,6 @@ When the file has been written, stop.]],
     context.model,
     "--title",
     title,
-    "--file",
-    prompt_file,
     "--",
     direct_prompt,
   }

@@ -20,20 +20,19 @@ describe("providers", function()
         "anthropic/claude-sonnet-4-5",
         "--title",
         "99 99-test",
-        "--file",
-        "./tmp/99-test-prompt",
         "--",
-        [[You are fulfilling a Neovim plugin request.
+        [[You are fulfilling a Neovim plugin request. Follow these instructions directly.
 
-Read the attached file for the task and context.
+Task and output-format instructions:
+test query
 
-Your required final action:
-Write the final result to this file, overwriting it:
-]] .. vim.fn.fnamemodify("./tmp/99-test", ":p") .. [[
+Required final action:
+Use the patch or edit tool to overwrite this file with the final result:
+]]
+          .. vim.fn.fnamemodify("./tmp/99-test", ":p")
+          .. [[
 
-Do not print the final result in chat or stdout.
-Do not modify any other file.
-When the file has been written, stop.]],
+Do not answer in chat or stdout. The result is only complete when the file has been written.]],
       }, cmd)
     end)
 
@@ -42,6 +41,22 @@ When the file has been written, stop.]],
         "opencode/claude-sonnet-4-5",
         Providers.OpenCodeProvider._get_default_model()
       )
+    end)
+
+    it("restricts edits to the response temp file", function()
+      local request = { tmp_file = "./tmp/99-test" }
+      local env = Providers.OpenCodeProvider._build_env(nil, request)
+      local config = vim.json.decode(env.OPENCODE_CONFIG_CONTENT)
+      local tmp_file = vim.fn.fnamemodify("./tmp/99-test", ":p")
+      local tmp_file_pattern = "*" .. tmp_file .. "*"
+      local relative_tmp_file_pattern = "*tmp/99-test*"
+
+      eq("deny", config.permission.edit["*"])
+      eq("allow", config.permission.edit[relative_tmp_file_pattern])
+      eq("allow", config.permission.edit[tmp_file_pattern])
+      eq("allow", config.permission.external_directory[tmp_file_pattern])
+      eq("deny", config.permission.bash)
+      eq("deny", config.permission.task)
     end)
   end)
 
