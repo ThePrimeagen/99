@@ -156,6 +156,8 @@ function OpenCodeProvider._build_command(_, query, context)
     "build",
     "-m",
     context.model,
+    "--title",
+    "",
     query,
   }
 end

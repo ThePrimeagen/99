@@ -15,6 +15,8 @@ describe("providers", function()
         "build",
         "-m",
         "anthropic/claude-sonnet-4-5",
+        "--title",
+        "",
         "test query",
       }, cmd)
     end)
