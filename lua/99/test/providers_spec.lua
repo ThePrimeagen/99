@@ -31,7 +31,7 @@ describe("providers", function()
     it("builds correct command with model", function()
       local request = { model = "anthropic/claude-sonnet-4-5" }
       local cmd =
-        Providers.ClaudeCodeProvider._build_command(nil, "test query", request)
+        Providers.ClaudeCodeProvider._build_command({}, "test query", request)
       eq({
         "claude",
         "--dangerously-skip-permissions",
@@ -42,8 +42,43 @@ describe("providers", function()
       }, cmd)
     end)
 
+    it("builds command without effort flag when effort is not set", function()
+      local request = { model = "claude-sonnet-4-5" }
+      local cmd =
+        Providers.ClaudeCodeProvider._build_command({}, "test query", request)
+      for _, v in ipairs(cmd) do
+        assert.is_not.equal("--effort", v)
+      end
+    end)
+
+    it("builds command with effort flag when effort is set", function()
+      local request = { model = "claude-sonnet-4-5" }
+      local cmd = Providers.ClaudeCodeProvider._build_command(
+        { effort = "high" },
+        "test query",
+        request
+      )
+      eq({
+        "claude",
+        "--dangerously-skip-permissions",
+        "--model",
+        "claude-sonnet-4-5",
+        "--effort",
+        "high",
+        "--print",
+        "test query",
+      }, cmd)
+    end)
+
     it("has correct default model", function()
       eq("claude-sonnet-4-5", Providers.ClaudeCodeProvider._get_default_model())
+    end)
+
+    it("returns effort levels", function()
+      eq(
+        { "low", "medium", "high", "max" },
+        Providers.ClaudeCodeProvider:_get_effort_levels()
+      )
     end)
   end)
 
@@ -176,6 +211,13 @@ describe("providers", function()
       eq("function", type(Providers.ClaudeCodeProvider.make_request))
       eq("function", type(Providers.CursorAgentProvider.make_request))
       eq("function", type(Providers.GeminiCLIProvider.make_request))
+    end)
+
+    it("_get_effort_levels returns nil for non-Claude providers", function()
+      eq(nil, Providers.OpenCodeProvider:_get_effort_levels())
+      eq(nil, Providers.CursorAgentProvider:_get_effort_levels())
+      eq(nil, Providers.GeminiCLIProvider:_get_effort_levels())
+      eq(nil, Providers.KiroProvider:_get_effort_levels())
     end)
   end)
 end)

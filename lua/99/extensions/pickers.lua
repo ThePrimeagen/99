@@ -76,4 +76,24 @@ function M.on_provider_selected(name, lookup)
   )
 end
 
+--- @return { levels: string[], current: string|nil }|nil
+function M.get_effort_levels()
+  local provider = _99.get_provider()
+  local levels = provider._get_effort_levels and provider:_get_effort_levels()
+  if not levels then
+    vim.notify(
+      "99: Current provider does not support effort levels",
+      vim.log.levels.WARN
+    )
+    return nil
+  end
+  return { levels = levels, current = _99.get_effort() }
+end
+
+--- @param level string
+function M.on_effort_selected(level)
+  _99.set_effort(level)
+  vim.notify("99: Effort set to " .. level)
+end
+
 return M

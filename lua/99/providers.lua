@@ -28,6 +28,11 @@ function BaseProvider.fetch_models(callback)
   callback(nil, "This provider does not support listing models")
 end
 
+--- @return string[]|nil
+function BaseProvider._get_effort_levels()
+  return nil
+end
+
 --- @param context _99.Prompt
 function BaseProvider:_retrieve_response(context)
   local logger = context.logger:set_area(self:_get_provider_name())
@@ -186,18 +191,28 @@ end
 --- @class ClaudeCodeProvider : _99.Providers.BaseProvider
 local ClaudeCodeProvider = setmetatable({}, { __index = BaseProvider })
 
+--- @return string[]
+function ClaudeCodeProvider._get_effort_levels()
+  return { "low", "medium", "high", "max" }
+end
+
 --- @param query string
 --- @param context _99.Prompt
 --- @return string[]
-function ClaudeCodeProvider._build_command(_, query, context)
-  return {
+function ClaudeCodeProvider._build_command(self, query, context)
+  local cmd = {
     "claude",
     "--dangerously-skip-permissions",
     "--model",
     context.model,
-    "--print",
-    query,
   }
+  if self.effort then
+    table.insert(cmd, "--effort")
+    table.insert(cmd, self.effort)
+  end
+  table.insert(cmd, "--print")
+  table.insert(cmd, query)
+  return cmd
 end
 
 --- @return string
