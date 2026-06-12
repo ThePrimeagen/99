@@ -167,7 +167,9 @@ Performs a search across your project with the prompt you provide and return out
 locations with notes that will be put into your quick fix list.
 
 #### vibe
-No description.
+
+Agentic AI mode. Provide a prompt describing what you want built or changed, your chosen provider 
+will implement it and report every modified location in the quickfix list.
 
 #### open
 Opens a selection window for you to select the last interaction to open
@@ -202,6 +204,8 @@ slick.
 
 Until then, it is going to be a single bit of work that you can provide
 the description and then use search to find what is left that needs to be done.
+
+Work items are saved to <tmp_dir>/work-item and persist across Neovim sessions per project directory.
 
 ### Description
 | Name | Type | Default Value |
