@@ -2,6 +2,18 @@ local _99 = require("99")
 
 local M = {}
 
+--- @param list string[]
+--- @param value string
+--- @return number
+function M.index_of(list, value)
+  for i, item in ipairs(list) do
+    if item == value then
+      return i
+    end
+  end
+  return 1
+end
+
 local function is_selectable_provider(provider)
   return type(provider) == "table"
     and type(provider._get_provider_name) == "function"
