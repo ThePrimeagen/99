@@ -48,39 +48,25 @@ _99.setup({
 
 ## Extensions
 
-### Telescope Model Selector
+### Model Selector
 
-If you have [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) installed, you can switch models on the fly via the Telescope picker:
+99 uses `vim.ui.select()` for model and provider selection, so it will work with whatever UI backend you have configured for that API.
 
 ```lua
 vim.keymap.set("n", "<leader>9m", function()
-  require("99.extensions.telescope").select_model()
+  require("99.extensions.pickers").select_model()
 end)
 ```
 
 The selected model is used for all subsequent requests in the current session.
 
-### Telescope Provider Selector
+### Provider Selector
 
 Switch between providers (OpenCode, Claude, Cursor, Kiro) without restarting Neovim. Switching provider also resets the model to that provider's default.
 
 ```lua
 vim.keymap.set("n", "<leader>9p", function()
-  require("99.extensions.telescope").select_provider()
-end)
-```
-
-### fzf-lua
-
-If you use [fzf-lua](https://github.com/ibhagwan/fzf-lua) instead of telescope, the same pickers are available:
-
-```lua
-vim.keymap.set("n", "<leader>9m", function()
-  require("99.extensions.fzf_lua").select_model()
-end)
-
-vim.keymap.set("n", "<leader>9p", function()
-  require("99.extensions.fzf_lua").select_provider()
+  require("99.extensions.pickers").select_provider()
 end)
 ```
 
@@ -98,4 +84,3 @@ To get the _last_ run's logs execute `:lua require("99").view_logs()`.
 ### Dont forget
 If there are secrets or other information in the logs you want to be removed make
 sure that you delete the `query` printing. This will likely contain information you may not want to share.
-
