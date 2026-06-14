@@ -304,7 +304,9 @@ end
 
 --- @return string
 function KiroProvider._get_default_model()
-  return "claude-sonnet-4.5"
+  -- Default to auto-routing between models for better cost/performance ratio. See:
+  -- https://kiro.dev/docs/cli/chat/model-selection/#auto-recommended
+  return "auto"
 end
 
 --- @class GeminiCLIProvider : _99.Providers.BaseProvider

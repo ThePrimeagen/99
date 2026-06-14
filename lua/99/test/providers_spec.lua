@@ -66,6 +66,27 @@ describe("providers", function()
     end)
   end)
 
+  describe("KiroProvider", function()
+    it("builds correct command with model", function()
+      local request = { model = "claude-sonnet-4.5" }
+      local cmd =
+        Providers.KiroProvider._build_command(nil, "test query", request)
+      eq({
+        "kiro-cli",
+        "chat",
+        "--no-interactive",
+        "--model",
+        "claude-sonnet-4.5",
+        "--trust-all-tools",
+        "test query",
+      }, cmd)
+    end)
+
+    it("has correct default model", function()
+      eq("auto", Providers.KiroProvider._get_default_model())
+    end)
+  end)
+
   describe("GeminiCLIProvider", function()
     it("builds correct command with model", function()
       local request = { model = "gemini-2.5-pro" }

@@ -31,12 +31,13 @@ Referenced content is automatically resolved and injected into the AI context. R
 ## Providers
 99 supports multiple AI CLI backends. Set `provider` in your setup to switch. If you don't set `model`, the provider's default is used.
 
-| Provider | CLI tool | Default model |
-|---|---|---|
-| `OpenCodeProvider` (default) | `opencode` | `opencode/claude-sonnet-4-5` |
-| `ClaudeCodeProvider` | `claude` | `claude-sonnet-4-5` |
-| `CursorAgentProvider` | `cursor-agent` | `sonnet-4.5` |
-| `GeminiCLIProvider` | `gemini` | `auto` |
+| Provider                     | CLI tool       | Default model                |
+| ---------------------------- | -------------- | ---------------------------- |
+| `OpenCodeProvider` (default) | `opencode`     | `opencode/claude-sonnet-4-5` |
+| `ClaudeCodeProvider`         | `claude`       | `claude-sonnet-4-5`          |
+| `CursorAgentProvider`        | `cursor-agent` | `sonnet-4.5`                 |
+| `KiroProvider`               | `kiro-cli`     | `auto`                       |
+| `GeminiCLIProvider`          | `gemini`       | `auto`                       |
 
 ```lua
 _99.setup({

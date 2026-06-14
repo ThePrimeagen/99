@@ -143,17 +143,17 @@ _99.search()
 See search for more details
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `setup` | `fun(opts?: _99.Options): nil` | - |
-| `search` | `fun(opts: _99.ops.SearchOpts): _99.TraceID` | - |
-| `vibe` | `fun(opts?: _99.ops.Opts): _99.TraceID \| nil` | - |
-| `open` | `fun(): nil` | - |
-| `visual` | `fun(opts: _99.ops.Opts): _99.TraceID` | - |
-| `view_logs` | `fun(): nil` | - |
-| `stop_all_requests` | `fun(): nil` | - |
-| `clear_previous_requests` | `fun(): nil` | - |
-| `Extensions` | `_99.Extensions` | - |
+| Name                      | Type                                           | Default Value |
+| ------------------------- | ---------------------------------------------- | ------------- |
+| `setup`                   | `fun(opts?: _99.Options): nil`                 | -             |
+| `search`                  | `fun(opts: _99.ops.SearchOpts): _99.TraceID`   | -             |
+| `vibe`                    | `fun(opts?: _99.ops.Opts): _99.TraceID \| nil` | -             |
+| `open`                    | `fun(): nil`                                   | -             |
+| `visual`                  | `fun(opts: _99.ops.Opts): _99.TraceID`         | -             |
+| `view_logs`               | `fun(): nil`                                   | -             |
+| `stop_all_requests`       | `fun(): nil`                                   | -             |
+| `clear_previous_requests` | `fun(): nil`                                   | -             |
+| `Extensions`              | `_99.Extensions`                               | -             |
 
 ### API
 
@@ -204,10 +204,10 @@ Until then, it is going to be a single bit of work that you can provide
 the description and then use search to find what is left that needs to be done.
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `set_work` | `fun(opts?: _99.WorkOpts): nil` | - |
-| `search` | `fun(): nil` | - |
+| Name       | Type                            | Default Value |
+| ---------- | ------------------------------- | ------------- |
+| `set_work` | `fun(opts?: _99.WorkOpts): nil` | -             |
+| `search`   | `fun(): nil`                    | -             |
 
 ### API
 
@@ -223,17 +223,17 @@ considered done
 No description.
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `logger` | `_99.Logger.Options \| nil` | - |
-| `model` | `string \| nil` | - |
-| `in_flight_options` | `_99.InFlight.Opts \| nil` | - |
-| `md_files` | `string[] \| nil` | - |
-| `provider` | `_99.Providers.BaseProvider \| nil` | - |
-| `display_errors` | `boolean \| nil` | - |
-| `auto_add_skills` | `boolean \| nil` | - |
-| `completion` | `_99.Completion \| nil` | - |
-| `tmp_dir` | `string \| nil` | - |
+| Name                | Type                                | Default Value |
+| ------------------- | ----------------------------------- | ------------- |
+| `logger`            | `_99.Logger.Options \| nil`         | -             |
+| `model`             | `string \| nil`                     | -             |
+| `in_flight_options` | `_99.InFlight.Opts \| nil`          | -             |
+| `md_files`          | `string[] \| nil`                   | -             |
+| `provider`          | `_99.Providers.BaseProvider \| nil` | -             |
+| `display_errors`    | `boolean \| nil`                    | -             |
+| `auto_add_skills`   | `boolean \| nil`                    | -             |
+| `completion`        | `_99.Completion \| nil`             | -             |
+| `tmp_dir`           | `string \| nil`                     | -             |
 
 ### API
 
@@ -269,10 +269,10 @@ The options that are used throughout all the interations with 99.  This
 includes search, visual, and others
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `additional_prompt` | `string \| nil` | - |
-| `additional_rules` | `_99.Agents.Rule[] \| nil` | - |
+| Name                | Type                       | Default Value |
+| ------------------- | -------------------------- | ------------- |
+| `additional_prompt` | `string \| nil`            | -             |
+| `additional_rules`  | `_99.Agents.Rule[] \| nil` | -             |
 
 ### API
 
@@ -306,8 +306,8 @@ There are no properties yet.  But i would like to tweek some behavior based on o
 
 ### Description
 | Name | Type | Default Value |
-| --- | --- | --- |
-| - | - | - |
+| ---- | ---- | ------------- |
+| -    | -    | -             |
 
 ### API
 No properties.
@@ -316,9 +316,9 @@ No properties.
 No description.
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `description` | `string \| nil` | - |
+| Name          | Type            | Default Value |
+| ------------- | --------------- | ------------- |
+| `description` | `string \| nil` | -             |
 
 ### API
 
@@ -329,11 +329,11 @@ No description.
 No description.
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `source` | `"cmp" \| "blink" \| nil` | - |
-| `custom_rules` | `string[]` | - |
-| `files` | `_99.Files.Config?` | - |
+| Name           | Type                      | Default Value |
+| -------------- | ------------------------- | ------------- |
+| `source`       | `"cmp" \| "blink" \| nil` | -             |
+| `custom_rules` | `string[]`                | -             |
+| `files`        | `_99.Files.Config?`       | -             |
 
 ### API
 
@@ -350,11 +350,11 @@ No description.
 this is pure a class for testing.   helps controls timings
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `throbber_opts` | `_99.Throbber.Opts \| nil` | - |
-| `in_flight_interval` | `number \| nil` | - |
-| `enable` | `boolean \| nil` | - |
+| Name                 | Type                       | Default Value |
+| -------------------- | -------------------------- | ------------- |
+| `throbber_opts`      | `_99.Throbber.Opts \| nil` | -             |
+| `in_flight_interval` | `number \| nil`            | -             |
+| `enable`             | `boolean \| nil`           | -             |
 
 ### API
 
@@ -372,13 +372,13 @@ defaults to true
 No description.
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `level` | `number?` | - |
-| `type` | `"print" \| "void" \| "file" \| nil` | - |
-| `path` | `string?` | - |
-| `print_on_error` | `boolean \| nil` | - |
-| `max_requests_cached` | `number \| nil` | - |
+| Name                  | Type                                 | Default Value |
+| --------------------- | ------------------------------------ | ------------- |
+| `level`               | `number?`                            | -             |
+| `type`                | `"print" \| "void" \| "file" \| nil` | -             |
+| `path`                | `string?`                            | -             |
+| `print_on_error`      | `boolean \| nil`                     | -             |
+| `max_requests_cached` | `number \| nil`                      | -             |
 
 ### API
 
@@ -401,11 +401,11 @@ No description.
 No description.
 
 ### Description
-| Name | Type | Default Value |
-| --- | --- | --- |
-| `name` | `string` | - |
-| `path` | `string` | - |
-| `absolute_path` | `string?` | - |
+| Name            | Type      | Default Value |
+| --------------- | --------- | ------------- |
+| `name`          | `string`  | -             |
+| `path`          | `string`  | -             |
+| `absolute_path` | `string?` | -             |
 
 ### API
 
@@ -430,12 +430,13 @@ Referenced content is automatically resolved and injected into the AI context. N
 ## Providers
 99 supports multiple AI CLI backends. Set `provider` in your setup to switch. If you don't set `model`, the provider's default is used.
 
-| Provider | CLI tool | Default model |
-|---|---|---|
-| `OpenCodeProvider` (default) | `opencode` | `opencode/claude-sonnet-4-5` |
-| `ClaudeCodeProvider` | `claude` | `claude-sonnet-4-5` |
-| `CursorAgentProvider` | `cursor-agent` | `sonnet-4.5` |
-| `GeminiCLIProvider` | `gemini` | `auto` |
+| Provider                     | CLI tool       | Default model                |
+| ---------------------------- | -------------- | ---------------------------- |
+| `OpenCodeProvider` (default) | `opencode`     | `opencode/claude-sonnet-4-5` |
+| `ClaudeCodeProvider`         | `claude`       | `claude-sonnet-4-5`          |
+| `CursorAgentProvider`        | `cursor-agent` | `sonnet-4.5`                 |
+| `KiroProvider`               | `kiro-cli`     | `auto`                       |
+| `GeminiCLIProvider`          | `gemini`       | `auto`                       |
 
 ```lua
 _99.setup({
