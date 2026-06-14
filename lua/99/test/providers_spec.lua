@@ -178,4 +178,66 @@ describe("providers", function()
       eq("function", type(Providers.GeminiCLIProvider.make_request))
     end)
   end)
+
+  describe("stdout_as_response", function()
+    it("is false for providers that write to temp file", function()
+      eq(false, Providers.OpenCodeProvider._stdout_as_response())
+      eq(false, Providers.KiroProvider._stdout_as_response())
+      eq(false, Providers.GeminiCLIProvider._stdout_as_response())
+    end)
+
+    it("is true for providers using --print flag", function()
+      eq(true, Providers.ClaudeCodeProvider._stdout_as_response())
+      eq(true, Providers.CursorAgentProvider._stdout_as_response())
+    end)
+  end)
+
+  describe("strip_markdown_fences", function()
+    it("strips code fences with language identifier", function()
+      local input = "```python\nis_inventory: bool,\n```"
+      eq(
+        "is_inventory: bool,",
+        Providers.BaseProvider.strip_markdown_fences(input)
+      )
+    end)
+
+    it("strips code fences without language identifier", function()
+      local input = "```\nis_inventory: bool,\n```"
+      eq(
+        "is_inventory: bool,",
+        Providers.BaseProvider.strip_markdown_fences(input)
+      )
+    end)
+
+    it("returns text unchanged when no fences present", function()
+      local input = "is_inventory: bool,"
+      eq(
+        "is_inventory: bool,",
+        Providers.BaseProvider.strip_markdown_fences(input)
+      )
+    end)
+
+    it("handles multi-line content inside fences", function()
+      local input = "```lua\nlocal x = 1\nlocal y = 2\nreturn x + y\n```"
+      eq(
+        "local x = 1\nlocal y = 2\nreturn x + y",
+        Providers.BaseProvider.strip_markdown_fences(input)
+      )
+    end)
+
+    it("handles empty content inside fences", function()
+      local input = "```\n```"
+      eq("", Providers.BaseProvider.strip_markdown_fences(input))
+    end)
+
+    it("trims to empty string for whitespace-only input", function()
+      eq("", vim.trim(Providers.BaseProvider.strip_markdown_fences("\n")))
+      eq("", vim.trim(Providers.BaseProvider.strip_markdown_fences("  \n  ")))
+    end)
+
+    it("does not strip fences that are not wrapping the whole text", function()
+      local input = "some text\n```python\ncode\n```\nmore text"
+      eq(input, Providers.BaseProvider.strip_markdown_fences(input))
+    end)
+  end)
 end)
