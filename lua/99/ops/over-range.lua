@@ -18,8 +18,17 @@ local function over_range(context, opts)
 
   local data = context:visual_data()
   local range = data.range
-  local top_mark = Mark.mark_above_range(range)
-  local bottom_mark = Mark.mark_point(range.buffer, range.end_)
+  
+  local ok_top, top_mark = pcall(Mark.mark_above_range, range)
+  local ok_bottom, bottom_mark = pcall(Mark.mark_point, range.buffer, range.end_)
+
+  if not ok_top or not ok_bottom or not top_mark:is_valid() or not bottom_mark:is_valid() then
+    logger:fatal(
+      "Cannot create marks for visual selection. Buffer may have been modified."
+    )
+    return
+  end
+
   context.marks.top_mark = top_mark
   context.marks.bottom_mark = bottom_mark
 

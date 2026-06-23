@@ -307,6 +307,57 @@ function KiroProvider._get_default_model()
   return "claude-sonnet-4.5"
 end
 
+--- @class PiProvider : _99.Providers.BaseProvider
+local PiProvider = setmetatable({}, { __index = BaseProvider })
+
+--- @param query string
+--- @param context _99.Prompt
+--- @return string[]
+function PiProvider._build_command(_, query, context)
+  return {
+    "pi",
+    "--print",
+    "--provider",
+    "opencode-go",
+    "--model",
+    context.model or "qwen3.7-plus",
+    "--no-context-files",
+    query,
+  }
+end
+
+--- @return string
+function PiProvider._get_provider_name()
+  return "PiProvider"
+end
+
+--- @return string
+function PiProvider._get_default_model()
+  return "qwen3.7-plus"
+end
+
+function PiProvider.fetch_models(callback)
+  vim.system({ "pi", "--list-models", "opencode-go" }, { text = true }, function(obj)
+    vim.schedule(function()
+      if obj.code ~= 0 then
+        callback(nil, "Failed to fetch models from pi")
+        return
+      end
+      -- Parse output, skip header lines
+      local models = {}
+      for line in vim.gsplit(obj.stdout, "\n", { trimempty = true }) do
+        if not line:match("^provider") and not line:match("^%-%-%-%-") then
+          local model = line:match("opencode%-go%s+(%S+)")
+          if model then
+            table.insert(models, model)
+          end
+        end
+      end
+      callback(models, nil)
+    end)
+  end)
+end
+
 --- @class GeminiCLIProvider : _99.Providers.BaseProvider
 local GeminiCLIProvider = setmetatable({}, { __index = BaseProvider })
 
@@ -342,6 +393,7 @@ end
 return {
   BaseProvider = BaseProvider,
   OpenCodeProvider = OpenCodeProvider,
+  PiProvider = PiProvider,
   ClaudeCodeProvider = ClaudeCodeProvider,
   CursorAgentProvider = CursorAgentProvider,
   KiroProvider = KiroProvider,
