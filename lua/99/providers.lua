@@ -217,14 +217,14 @@ end
 -- See https://github.com/anthropics/claude-code/issues/12612
 function ClaudeCodeProvider.fetch_models(callback)
   callback({
+    "claude-opus-4-8",
+    "claude-opus-4-7",
     "claude-opus-4-6",
-    "claude-sonnet-4-5",
+    "claude-sonnet-4-6",
     "claude-haiku-4-5",
     "claude-opus-4-5",
+    "claude-sonnet-4-5",
     "claude-opus-4-1",
-    "claude-sonnet-4-0",
-    "claude-opus-4-0",
-    "claude-3-7-sonnet-latest",
   }, nil)
 end
 
