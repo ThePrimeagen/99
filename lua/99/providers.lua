@@ -231,10 +231,38 @@ end
 --- @class CursorAgentProvider : _99.Providers.BaseProvider
 local CursorAgentProvider = setmetatable({}, { __index = BaseProvider })
 
+--- @param context _99.Prompt
+--- @return string
+local function cursor_agent_prompt_file(context)
+  local rel = context.tmp_file .. "-prompt"
+  local candidates = {
+    vim.fs.normalize(vim.fn.fnamemodify(rel, ":p")),
+    vim.fs.normalize(vim.fn.fnamemodify(
+      vim.fs.joinpath(vim.fn.getcwd(), rel),
+      ":p"
+    )),
+  }
+  for _, path in ipairs(candidates) do
+    if vim.fn.filereadable(path) == 1 then
+      return path
+    end
+  end
+  return candidates[1]
+end
+
+--- @param context _99.Prompt
+--- @return string
+local function cursor_agent_print_prompt(context)
+  return string.format(
+    "Read and follow every instruction in @%s using your file tools, then complete the task exactly as specified in that file.",
+    cursor_agent_prompt_file(context)
+  )
+end
+
 --- @param query string
 --- @param context _99.Prompt
 --- @return string[]
-function CursorAgentProvider._build_command(_, query, context)
+function CursorAgentProvider._build_command(_, _query, context)
   -- TODO: trust is sort of a hack and should probably be removed in favor of having a
   -- trust flag from the setup call
   return {
@@ -244,7 +272,7 @@ function CursorAgentProvider._build_command(_, query, context)
     "--model",
     context.model,
     "--print",
-    query,
+    cursor_agent_print_prompt(context),
   }
 end
 
