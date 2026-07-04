@@ -267,24 +267,69 @@ local CursorAgentProvider = setmetatable({}, { __index = BaseProvider })
 
 --- @param context _99.Prompt
 --- @return string
-local function cursor_agent_prompt_file(context)
-  local path = vim.fn.fnamemodify(context.tmp_file .. "-prompt", ":p")
-  path = vim.fs.normalize(path)
-  if vim.fn.filereadable(path) ~= 1 then
-    path = vim.fs.normalize(vim.fn.fnamemodify(
-      vim.fs.joinpath(vim.fn.getcwd(), context.tmp_file .. "-prompt"),
-      ":p"
-    ))
+local function cursor_agent_workspace(_context)
+  return vim.fn.getcwd()
+end
+
+--- @param relative string
+--- @param ws string
+--- @return string[]
+local function cursor_agent_tmp_paths(relative, ws)
+  local seen, out = {}, {}
+
+  local function add(path)
+    path = vim.fs.normalize(vim.fn.fnamemodify(path, ":p"))
+    if not seen[path] then
+      seen[path] = true
+      out[#out + 1] = path
+    end
   end
-  return path
+
+  if relative:match("^[%a]:[/\\]") or relative:match("^/") then
+    add(relative)
+    return out
+  end
+
+  local rel = relative:gsub("^%.[\\/]", "")
+  for _, base in ipairs({ ws, vim.fn.getcwd() }) do
+    add(vim.fs.joinpath(base, rel))
+  end
+  return out
+end
+
+--- @param paths string[]
+--- @return string, string|nil
+local function cursor_agent_read_first(paths)
+  for _, path in ipairs(paths) do
+    local ok, lines = pcall(vim.fn.readfile, path)
+    if ok and #lines > 0 then
+      return table.concat(lines, "\n"), path
+    end
+  end
+  return "", nil
 end
 
 --- @param context _99.Prompt
+--- @param ws string|nil
 --- @return string
-local function cursor_agent_print_prompt(context)
+local function cursor_agent_prompt_file(context, ws)
+  ws = ws or cursor_agent_workspace(context)
+  for _, path in ipairs(cursor_agent_tmp_paths(context.tmp_file .. "-prompt", ws)) do
+    if vim.fn.filereadable(path) == 1 then
+      return path
+    end
+  end
+  return cursor_agent_tmp_paths(context.tmp_file .. "-prompt", ws)[1]
+end
+
+--- @param context _99.Prompt
+--- @param ws string|nil
+--- @return string
+local function cursor_agent_print_prompt(context, ws)
+  local prompt_file = cursor_agent_prompt_file(context, ws)
   return string.format(
     "Read and follow every instruction in @%s using your file tools, then complete the task exactly as specified in that file.",
-    cursor_agent_prompt_file(context)
+    prompt_file
   )
 end
 
@@ -292,15 +337,132 @@ end
 --- @param context _99.Prompt
 --- @return string[]
 function CursorAgentProvider._build_command(_, _query, context)
+  local ws = cursor_agent_workspace(context)
   return {
     "cursor-agent",
+    "--workspace",
+    ws,
     "--trust",
     "--force",
     "--model",
     context.model,
     "--print",
-    cursor_agent_print_prompt(context),
+    cursor_agent_print_prompt(context, ws),
   }
+end
+
+--- @param context _99.Prompt
+--- @return boolean, string
+function CursorAgentProvider:_retrieve_response(context)
+  local ws = cursor_agent_workspace(context)
+  local tmp = cursor_agent_read_first(cursor_agent_tmp_paths(context.tmp_file, ws))
+  if tmp:match("%S") then
+    return true, tmp
+  end
+  return BaseProvider._retrieve_response(self, context)
+end
+
+--- @param query string
+--- @param context _99.Prompt
+--- @param observer _99.Providers.Observer
+function CursorAgentProvider:make_request(query, context, observer)
+  observer.on_start()
+
+  local ws = cursor_agent_workspace(context)
+  local logger = context.logger:set_area(self:_get_provider_name())
+  logger:debug("make_request", "tmp_file", context.tmp_file)
+
+  local once_complete = once(function(status, text)
+    observer.on_complete(status, text)
+  end)
+
+  local command = self:_build_command(query, context)
+  local extra_args = context._99 and context._99.provider_extra_args or {}
+  if #extra_args > 0 then
+    vim.list_extend(command, extra_args)
+  end
+  logger:debug("make_request", "command", command, "cwd", ws)
+
+  local stdout_chunks = {}
+  local capture_stdout = self._stdout_as_response()
+
+  local proc = vim.system(
+    command,
+    {
+      cwd = ws,
+      text = true,
+      stdout = vim.schedule_wrap(function(err, data)
+        logger:debug("stdout", "data", data)
+        if context:is_cancelled() then
+          once_complete("cancelled", "")
+          return
+        end
+        if err and err ~= "" then
+          logger:debug("stdout#error", "err", err)
+        end
+        if not err and data then
+          if capture_stdout then
+            table.insert(stdout_chunks, data)
+          end
+          observer.on_stdout(data)
+        end
+      end),
+      stderr = vim.schedule_wrap(function(err, data)
+        logger:debug("stderr", "data", data)
+        if context:is_cancelled() then
+          once_complete("cancelled", "")
+          return
+        end
+        if err and err ~= "" then
+          logger:debug("stderr#error", "err", err)
+        end
+        if not err then
+          observer.on_stderr(data)
+        end
+      end),
+    },
+    vim.schedule_wrap(function(obj)
+      if context:is_cancelled() then
+        once_complete("cancelled", "")
+        logger:debug("on_complete: request has been cancelled")
+        return
+      end
+      if obj.code ~= 0 then
+        local str =
+          string.format("process exit code: %d\n%s", obj.code, vim.inspect(obj))
+        once_complete("failed", str)
+        logger:fatal(
+          self:_get_provider_name() .. " make_query failed: " .. str,
+          "obj from results",
+          obj
+        )
+      else
+        vim.schedule(function()
+          if capture_stdout then
+            local raw = table.concat(stdout_chunks, "")
+            local cleaned = BaseProvider.strip_markdown_fences(vim.trim(raw))
+            if cleaned ~= "" then
+              for _, path in ipairs(cursor_agent_tmp_paths(context.tmp_file, ws)) do
+                vim.fn.writefile(vim.split(cleaned, "\n"), path)
+                break
+              end
+            end
+          end
+          local ok, res = self:_retrieve_response(context)
+          if ok then
+            once_complete("success", res)
+          else
+            once_complete(
+              "failed",
+              "unable to retrieve response from temp file"
+            )
+          end
+        end)
+      end
+    end)
+  )
+
+  context:_set_process(proc)
 end
 
 --- @return string
