@@ -48,21 +48,76 @@ describe("providers", function()
   end)
 
   describe("CursorAgentProvider", function()
-    it("builds correct command with model", function()
-      local request = { model = "anthropic/claude-sonnet-4-5" }
-      local cmd =
-        Providers.CursorAgentProvider._build_command(nil, "test query", request)
-      eq({
-        "cursor-agent",
-        "--model",
-        "anthropic/claude-sonnet-4-5",
-        "--print",
-        "test query",
-      }, cmd)
+    it("builds command with @ prompt file and workspace", function()
+      local request = { model = "sonnet-4.5", tmp_file = "tmp/99-1234" }
+      local cmd = Providers.CursorAgentProvider._build_command(
+        nil,
+        "<Context>ignored</Context>",
+        request
+      )
+      local print_arg = cmd[#cmd]
+      eq("cursor-agent", cmd[1])
+      eq("--workspace", cmd[2])
+      eq(vim.fn.getcwd(), cmd[3])
+      eq("--trust", cmd[4])
+      eq("--force", cmd[5])
+      eq("--model", cmd[6])
+      eq("sonnet-4.5", cmd[7])
+      eq("--print", cmd[8])
+      assert(print_arg:match("@"))
+      assert(print_arg:match("99%-1234%-prompt"))
+      assert(not print_arg:match("<Context>"))
+      assert(not print_arg:match("\n"))
     end)
 
     it("has correct default model", function()
       eq("sonnet-4.5", Providers.CursorAgentProvider._get_default_model())
+    end)
+
+    it("normalize_qfix_response converts cursor citations", function()
+      local text = table.concat({
+        "```6:11:C:\\Dev\\test\\test.js",
+        "function main() {}",
+        "```",
+      }, "\n")
+      local out = Providers.CursorAgentProvider.normalize_qfix_response(text)
+      assert(out:match("C:\\Dev\\test\\test.js:6:1,6"))
+    end)
+
+    it("normalize_qfix_response keeps existing qfix lines", function()
+      local line = "C:/project/file.lua:10:1,3,note"
+      eq(line, Providers.CursorAgentProvider.normalize_qfix_response(line))
+    end)
+
+    it("normalize_qfix_response ignores qfix-like strings inside citation fences", function()
+      local text = table.concat({
+        "```6:11:C:\\Dev\\test\\test.js",
+        'const x = err("file.js:5:3,4,msg")',
+        "```",
+      }, "\n")
+      local out = Providers.CursorAgentProvider.normalize_qfix_response(text)
+      assert(out:match("C:\\Dev\\test\\test.js:6:1,6"))
+      assert(not out:match("file%.js:5"))
+    end)
+
+    it("normalize_qfix_response ignores qfix-like strings in plain code fences", function()
+      local text = table.concat({
+        "```javascript",
+        'const x = err("file.js:5:3,4,msg")',
+        "```",
+      }, "\n")
+      eq("", Providers.CursorAgentProvider.normalize_qfix_response(text))
+    end)
+
+    it("normalize_qfix_response keeps qfix lines outside code fences", function()
+      local line = "C:/project/file.lua:10:1,3,note"
+      local text = table.concat({
+        line,
+        "```javascript",
+        'const x = err("file.js:5:3,4,msg")',
+        "```",
+      }, "\n")
+      eq(line, Providers.CursorAgentProvider.normalize_qfix_response(text))
     end)
   end)
 
