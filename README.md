@@ -437,6 +437,10 @@ Referenced content is automatically resolved and injected into the AI context. N
 | `CursorAgentProvider` | `cursor-agent` | `sonnet-4.5` |
 | `GeminiCLIProvider` | `gemini` | `auto` |
 
+### Cursor Agent
+
+- Prompts are delivered via a single-line `@path` reference to `tmp/99-*-prompt` (written before each request), not as multiline argv to `--print`.
+
 ```lua
 _99.setup({
     provider = _99.Providers.ClaudeCodeProvider,

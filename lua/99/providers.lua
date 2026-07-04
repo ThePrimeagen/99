@@ -265,20 +265,41 @@ end
 --- @class CursorAgentProvider : _99.Providers.BaseProvider
 local CursorAgentProvider = setmetatable({}, { __index = BaseProvider })
 
+--- @param context _99.Prompt
+--- @return string
+local function cursor_agent_prompt_file(context)
+  local path = vim.fn.fnamemodify(context.tmp_file .. "-prompt", ":p")
+  path = vim.fs.normalize(path)
+  if vim.fn.filereadable(path) ~= 1 then
+    path = vim.fs.normalize(vim.fn.fnamemodify(
+      vim.fs.joinpath(vim.fn.getcwd(), context.tmp_file .. "-prompt"),
+      ":p"
+    ))
+  end
+  return path
+end
+
+--- @param context _99.Prompt
+--- @return string
+local function cursor_agent_print_prompt(context)
+  return string.format(
+    "Read and follow every instruction in @%s using your file tools, then complete the task exactly as specified in that file.",
+    cursor_agent_prompt_file(context)
+  )
+end
+
 --- @param query string
 --- @param context _99.Prompt
 --- @return string[]
-function CursorAgentProvider._build_command(_, query, context)
-  -- TODO: trust is sort of a hack and should probably be removed in favor of having a
-  -- trust flag from the setup call
+function CursorAgentProvider._build_command(_, _query, context)
   return {
     "cursor-agent",
-    "--trust", -- directories are always trusted and can be ran in
-    "--force", -- allows for commands to run
+    "--trust",
+    "--force",
     "--model",
     context.model,
     "--print",
-    query,
+    cursor_agent_print_prompt(context),
   }
 end
 
