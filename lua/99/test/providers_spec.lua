@@ -48,17 +48,26 @@ describe("providers", function()
   end)
 
   describe("CursorAgentProvider", function()
-    it("builds correct command with model", function()
-      local request = { model = "anthropic/claude-sonnet-4-5" }
-      local cmd =
-        Providers.CursorAgentProvider._build_command(nil, "test query", request)
-      eq({
-        "cursor-agent",
-        "--model",
-        "anthropic/claude-sonnet-4-5",
-        "--print",
-        "test query",
-      }, cmd)
+    it("uses @ prompt file instead of XML on argv", function()
+      local request = { model = "sonnet-4.5", tmp_file = "tmp/99-1234" }
+      local cmd = Providers.CursorAgentProvider._build_command(
+        nil,
+        "<Context>ignored</Context>",
+        request
+      )
+      local print_arg = cmd[#cmd]
+      eq("cursor-agent", cmd[1])
+      eq("--workspace", cmd[2])
+      eq(vim.fn.getcwd(), cmd[3])
+      eq("--trust", cmd[4])
+      eq("--force", cmd[5])
+      eq("--model", cmd[6])
+      eq("sonnet-4.5", cmd[7])
+      eq("--print", cmd[8])
+      assert(print_arg:match("@"))
+      assert(print_arg:match("99%-1234%-prompt"))
+      assert(not print_arg:match("<Context>"))
+      assert(not print_arg:match("\n"))
     end)
 
     it("has correct default model", function()

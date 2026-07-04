@@ -231,21 +231,103 @@ end
 --- @class CursorAgentProvider : _99.Providers.BaseProvider
 local CursorAgentProvider = setmetatable({}, { __index = BaseProvider })
 
+--- @param context _99.Prompt
+--- @return string
+local function cursor_agent_workspace(_context)
+  return vim.fn.getcwd()
+end
+
+--- @param relative string
+--- @param ws string
+--- @return string[]
+local function cursor_agent_tmp_paths(relative, ws)
+  local seen, out = {}, {}
+
+  local function add(path)
+    path = vim.fs.normalize(vim.fn.fnamemodify(path, ":p"))
+    if not seen[path] then
+      seen[path] = true
+      out[#out + 1] = path
+    end
+  end
+
+  if relative:match("^[%a]:[/\\]") or relative:match("^/") then
+    add(relative)
+    return out
+  end
+
+  local rel = relative:gsub("^%.[\\/]", "")
+  for _, base in ipairs({ ws, vim.fn.getcwd() }) do
+    add(vim.fs.joinpath(base, rel))
+  end
+  return out
+end
+
+--- @param paths string[]
+--- @return string, string|nil
+local function cursor_agent_read_first(paths)
+  for _, path in ipairs(paths) do
+    local ok, lines = pcall(vim.fn.readfile, path)
+    if ok and #lines > 0 then
+      return table.concat(lines, "\n"), path
+    end
+  end
+  return "", nil
+end
+
+--- @param context _99.Prompt
+--- @param ws string|nil
+--- @return string
+local function cursor_agent_prompt_file(context, ws)
+  ws = ws or cursor_agent_workspace(context)
+  for _, path in ipairs(cursor_agent_tmp_paths(context.tmp_file .. "-prompt", ws)) do
+    if vim.fn.filereadable(path) == 1 then
+      return path
+    end
+  end
+  return cursor_agent_tmp_paths(context.tmp_file .. "-prompt", ws)[1]
+end
+
+--- @param context _99.Prompt
+--- @param ws string|nil
+--- @return string
+local function cursor_agent_print_prompt(context, ws)
+  local prompt_file = cursor_agent_prompt_file(context, ws)
+  return string.format(
+    "Read and follow every instruction in @%s using your file tools, then complete the task exactly as specified in that file.",
+    prompt_file
+  )
+end
+
 --- @param query string
 --- @param context _99.Prompt
 --- @return string[]
-function CursorAgentProvider._build_command(_, query, context)
+function CursorAgentProvider._build_command(_, _query, context)
   -- TODO: trust is sort of a hack and should probably be removed in favor of having a
   -- trust flag from the setup call
+  local ws = cursor_agent_workspace(context)
   return {
     "cursor-agent",
+    "--workspace",
+    ws,
     "--trust", -- directories are always trusted and can be ran in
     "--force", -- allows for commands to run
     "--model",
     context.model,
     "--print",
-    query,
+    cursor_agent_print_prompt(context, ws),
   }
+end
+
+--- @param context _99.Prompt
+--- @return boolean, string
+function CursorAgentProvider:_retrieve_response(context)
+  local ws = cursor_agent_workspace(context)
+  local tmp = cursor_agent_read_first(cursor_agent_tmp_paths(context.tmp_file, ws))
+  if tmp:match("%S") then
+    return true, tmp
+  end
+  return BaseProvider._retrieve_response(self, context)
 end
 
 --- @return string
