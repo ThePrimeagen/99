@@ -441,6 +441,7 @@ Referenced content is automatically resolved and injected into the AI context. N
 
 - Prompts are delivered via a single-line `@path` reference to `tmp/99-*-prompt` (written before each request), not as multiline argv to `--print`.
 - Passes `--workspace` and runs the CLI with matching `cwd`. Set `tmp_dir` under your project root (default `./tmp`) so TEMP_FILE paths match the workspace.
+- Search and vibe normalize cursor-agent citation blocks (` ```start:end:path `) into qfix lines when needed.
 
 ```lua
 _99.setup({

@@ -4,6 +4,8 @@
 --- @field on_complete fun(status: _99.Prompt.EndingState, res: string): nil
 --- @field on_start fun(): nil
 
+local QFixHelpers = require("99.ops.qfix-helpers")
+
 --- @param fn fun(...: any): nil
 --- @return fun(...: any): nil
 local function once(fn)
@@ -265,6 +267,11 @@ end
 --- @class CursorAgentProvider : _99.Providers.BaseProvider
 local CursorAgentProvider = setmetatable({}, { __index = BaseProvider })
 
+local CURSOR_AGENT_QFIX_OPS = {
+  search = true,
+  vibe = true,
+}
+
 --- @param context _99.Prompt
 --- @return string
 local function cursor_agent_workspace(_context)
@@ -333,6 +340,99 @@ local function cursor_agent_print_prompt(context, ws)
   )
 end
 
+--- @param line string
+--- @return boolean
+local function cursor_agent_is_qfix_line(line)
+  line = vim.trim(line)
+  return line:match("^(.+):(%d+):(%d+),(%d+),") ~= nil
+end
+
+--- @param text string
+--- @return boolean
+local function cursor_agent_looks_like_result_payload(text)
+  if (text or ""):match("```(%d+):(%d+):") then
+    return true
+  end
+  for line in vim.gsplit(text or "", "\n", true) do
+    if cursor_agent_is_qfix_line(line) then
+      return true
+    end
+  end
+  return false
+end
+
+--- @param text string
+--- @return boolean
+local function cursor_agent_looks_like_status_only(text)
+  text = text or ""
+  if cursor_agent_looks_like_result_payload(text) then
+    return false
+  end
+  return text:match("^Done%.")
+    or text:match("^Task complete")
+    or text:match("Results are in")
+    or text:match("Results were written")
+end
+
+--- @param existing string
+--- @param cleaned string
+--- @return boolean
+local function cursor_agent_should_write_stdout_to_tmp(existing, cleaned)
+  if cleaned == "" then
+    return false
+  end
+  if existing:match("%S") and cursor_agent_looks_like_result_payload(existing) then
+    return false
+  end
+  if cursor_agent_looks_like_status_only(cleaned) then
+    return false
+  end
+  return true
+end
+
+--- @param text string
+--- @return string
+function CursorAgentProvider.normalize_qfix_response(text)
+  local hits, seen = {}, {}
+
+  local function add(path, lnum, col, line_count, notes)
+    path = vim.trim(path)
+    local key = string.format("%s:%d:%d", path, lnum, col)
+    if seen[key] then
+      return
+    end
+    seen[key] = true
+    hits[#hits + 1] = string.format(
+      "%s:%d:%d,%d,%s",
+      path,
+      lnum,
+      col,
+      line_count,
+      notes or "match"
+    )
+  end
+
+  for line in vim.gsplit(text or "", "\n", true) do
+    line = vim.trim(line)
+    if QFixHelpers.parse_line(line) and not seen[line] then
+      seen[line] = true
+      hits[#hits + 1] = line
+    end
+  end
+  if #hits > 0 then
+    return table.concat(hits, "\n")
+  end
+
+  for sl, el, path in (text or ""):gmatch("```(%d+):(%d+):([^\r\n]+)") do
+    sl = tonumber(sl)
+    el = tonumber(el)
+    if sl and el and path then
+      add(path, sl, 1, math.max(1, el - sl + 1), "match")
+    end
+  end
+  return table.concat(hits, "\n")
+end
+
 --- @param query string
 --- @param context _99.Prompt
 --- @return string[]
@@ -356,10 +456,26 @@ end
 function CursorAgentProvider:_retrieve_response(context)
   local ws = cursor_agent_workspace(context)
   local tmp = cursor_agent_read_first(cursor_agent_tmp_paths(context.tmp_file, ws))
-  if tmp:match("%S") then
-    return true, tmp
+
+  local function finish(text)
+    if CURSOR_AGENT_QFIX_OPS[context.operation] then
+      text = CursorAgentProvider.normalize_qfix_response(text)
+    end
+    if text:match("%S") then
+      return true, text
+    end
+    return false, ""
   end
-  return BaseProvider._retrieve_response(self, context)
+
+  if tmp:match("%S") then
+    return finish(tmp)
+  end
+
+  local ok, text = BaseProvider._retrieve_response(self, context)
+  if ok and text:match("%S") then
+    return finish(text)
+  end
+  return false, ""
 end
 
 --- @param query string
@@ -441,7 +557,10 @@ function CursorAgentProvider:make_request(query, context, observer)
           if capture_stdout then
             local raw = table.concat(stdout_chunks, "")
             local cleaned = BaseProvider.strip_markdown_fences(vim.trim(raw))
-            if cleaned ~= "" then
+            local existing = cursor_agent_read_first(
+              cursor_agent_tmp_paths(context.tmp_file, ws)
+            )
+            if cursor_agent_should_write_stdout_to_tmp(existing, cleaned) then
               for _, path in ipairs(cursor_agent_tmp_paths(context.tmp_file, ws)) do
                 vim.fn.writefile(vim.split(cleaned, "\n"), path)
                 break

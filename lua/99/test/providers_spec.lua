@@ -48,7 +48,7 @@ describe("providers", function()
   end)
 
   describe("CursorAgentProvider", function()
-    it("uses @ prompt file instead of XML on argv", function()
+    it("builds command with @ prompt file and workspace", function()
       local request = { model = "sonnet-4.5", tmp_file = "tmp/99-1234" }
       local cmd = Providers.CursorAgentProvider._build_command(
         nil,
@@ -72,6 +72,21 @@ describe("providers", function()
 
     it("has correct default model", function()
       eq("sonnet-4.5", Providers.CursorAgentProvider._get_default_model())
+    end)
+
+    it("normalize_qfix_response converts cursor citations", function()
+      local text = table.concat({
+        "```6:11:C:\\Dev\\test\\test.js",
+        "function main() {}",
+        "```",
+      }, "\n")
+      local out = Providers.CursorAgentProvider.normalize_qfix_response(text)
+      assert(out:match("C:\\Dev\\test\\test.js:6:1,6"))
+    end)
+
+    it("normalize_qfix_response keeps existing qfix lines", function()
+      local line = "C:/project/file.lua:10:1,3,note"
+      eq(line, Providers.CursorAgentProvider.normalize_qfix_response(line))
     end)
   end)
 
