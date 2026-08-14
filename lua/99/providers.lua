@@ -228,6 +228,55 @@ function ClaudeCodeProvider.fetch_models(callback)
   }, nil)
 end
 
+--- @class AgyProvider : _99.Providers.BaseProvider
+local AgyProvider = setmetatable({}, { __index = BaseProvider })
+
+--- @param query string
+--- @param context _99.Prompt
+--- @return string[]
+function AgyProvider._build_command(_, query, context)
+  return {
+    "agy",
+    "--dangerously-skip-permissions",
+    "--model",
+    context.model,
+    "--print",
+    query,
+  }
+end
+
+--- @return string
+function AgyProvider._get_provider_name()
+  return "AgyProvider"
+end
+
+--- @return string
+function AgyProvider._get_default_model()
+  return "gemini-3.5-flash-low"
+end
+
+function AgyProvider.fetch_models(callback)
+  vim.system({ "agy", "models" }, { text = true }, function(obj)
+    vim.schedule(function()
+      if obj.code ~= 0 then
+        callback(nil, "Failed to fetch models from agy")
+        return
+      end
+
+      local models = {}
+      for _, line in ipairs(vim.split(obj.stdout, "\n", { trimempty = true })) do
+        if not line:match("^Fetching available models%.%.%.") then
+          local id = line:match("^(%S+)")
+          if id then
+            table.insert(models, id)
+          end
+        end
+      end
+      callback(models, nil)
+    end)
+  end)
+end
+
 --- @class CursorAgentProvider : _99.Providers.BaseProvider
 local CursorAgentProvider = setmetatable({}, { __index = BaseProvider })
 
@@ -343,6 +392,7 @@ return {
   BaseProvider = BaseProvider,
   OpenCodeProvider = OpenCodeProvider,
   ClaudeCodeProvider = ClaudeCodeProvider,
+  AgyProvider = AgyProvider,
   CursorAgentProvider = CursorAgentProvider,
   KiroProvider = KiroProvider,
   GeminiCLIProvider = GeminiCLIProvider,

@@ -47,6 +47,62 @@ describe("providers", function()
     end)
   end)
 
+  describe("AgyProvider", function()
+    it("builds correct command with model", function()
+      local request = { model = "gemini-3.7-flash-low" }
+      local cmd =
+        Providers.AgyProvider._build_command(nil, "test query", request)
+      eq({
+        "agy",
+        "--dangerously-skip-permissions",
+        "--model",
+        "gemini-3.7-flash-low",
+        "--print",
+        "test query",
+      }, cmd)
+    end)
+
+    it("has correct default model", function()
+      eq("gemini-3.5-flash-low", Providers.AgyProvider._get_default_model())
+    end)
+
+    it("parses model ids and ignores status output", function()
+      local original_system = vim.system
+      local original_schedule = vim.schedule
+      local result
+
+      vim.system = function(_, _, callback)
+        callback({
+          code = 0,
+          stdout = table.concat({
+            "Fetching available models...",
+            "gemini-3.5-flash-low Gemini 3.5 Flash (Low)",
+            "gemini-3.5-flash-medium Gemini 3.5 Flash (Medium)",
+            "gemini-3.5-flash-high Gemini 3.5 Flash (High)",
+          }, "\n"),
+        })
+      end
+      vim.schedule = function(fn)
+        fn()
+      end
+
+      Providers.AgyProvider.fetch_models(function(models, err)
+        result = { models = models, err = err }
+      end)
+
+      vim.system = original_system
+      vim.schedule = original_schedule
+      eq({
+        models = {
+          "gemini-3.5-flash-low",
+          "gemini-3.5-flash-medium",
+          "gemini-3.5-flash-high",
+        },
+        err = nil,
+      }, result)
+    end)
+  end)
+
   describe("CursorAgentProvider", function()
     it("builds correct command with model", function()
       local request = { model = "anthropic/claude-sonnet-4-5" }
@@ -140,6 +196,17 @@ describe("providers", function()
       end
     )
 
+    it(
+      "uses AgyProvider default model when provider specified but no model",
+      function()
+        local _99 = require("99")
+
+        _99.setup({ provider = Providers.AgyProvider })
+        local state = _99.__get_state()
+        eq("gemini-3.5-flash-low", state.model)
+      end
+    )
+
     it("uses custom model when both provider and model specified", function()
       local _99 = require("99")
 
@@ -176,6 +243,7 @@ describe("providers", function()
       eq("function", type(Providers.ClaudeCodeProvider.make_request))
       eq("function", type(Providers.CursorAgentProvider.make_request))
       eq("function", type(Providers.GeminiCLIProvider.make_request))
+      eq("function", type(Providers.AgyProvider.make_request))
     end)
   end)
 end)
